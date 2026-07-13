@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "bun ./index.html",
-    "build": "bun build ./main.tsx --outdir=dist",
+    "build": "bun build ./index.html --outdir=dist --public-path=./",
     "check": "tsc --noEmit"
   },
   "dependencies": {
