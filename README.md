@@ -50,10 +50,11 @@ the root Cargo package and depends on `mediakit` through `../..`.
 Pushes to `main` rebuild the WASM package, type-check and bundle the demo, and publish `demo/dist`
 to [GitHub Pages](https://jkwill87.github.io/mediakit/) through `.github/workflows/push.yml`.
 
-Successful `main` pushes also publish the next patch as a unique development prerelease on
-[crates.io](https://crates.io/crates/mediakit), such as `0.1.1-dev.42.1`. Pushing a stable
-`vMAJOR.MINOR.PATCH` tag publishes that exact release version. Publishing runs only after lint and
-tests pass; the registry credential is stored in the `CARGO_REGISTRY_TOKEN` GitHub Actions secret.
+Successful `main` pushes also publish the next patch as a development prerelease on
+[crates.io](https://crates.io/crates/mediakit), such as `0.1.1-dev42`. Reruns reuse the same version.
+Pushing a stable `vMAJOR.MINOR.PATCH` tag publishes that exact release version. Publishing runs only
+after lint and tests pass; the registry credential is stored in the `CARGO_REGISTRY_TOKEN` GitHub
+Actions secret.
 
 ## License
 

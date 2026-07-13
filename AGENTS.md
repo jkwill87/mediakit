@@ -56,8 +56,8 @@ relying on the browser demo.
 ## Repository notes
 
 - GitHub Actions runs the mise-backed Rust and demo checks before publishing packages.
-- Successful `main` pushes publish a unique next-patch development prerelease to crates.io;
-  `vMAJOR.MINOR.PATCH` tags publish the corresponding stable release.
+- Successful `main` pushes publish a next-patch `-dev<RUN_NUMBER>` prerelease to crates.io; reruns
+  reuse that version, and `vMAJOR.MINOR.PATCH` tags publish the corresponding stable release.
 - The crates.io credential belongs only in the `CARGO_REGISTRY_TOKEN` GitHub Actions secret or a
   gitignored local mise override.
 - Personal overrides belong in gitignored `mise.local.toml`; never commit credentials.
