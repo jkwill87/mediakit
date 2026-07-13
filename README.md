@@ -4,6 +4,8 @@ A Rust library for parsing media filenames and file metadata into structured tag
 titles, season and episode numbers, codecs, resolutions, release information, and bounded container
 metadata from media paths.
 
+[Try the interactive browser demo](https://jkwill87.github.io/mediakit/).
+
 ## Quick start
 
 ```rust
@@ -25,10 +27,10 @@ header probing for Matroska/WebM, ISO-BMFF/QuickTime, AVI, MPEG-TS/M2TS, and ASF
 
 ## Feature flags
 
-| Flag            | Default | Description                         |
-| --------------- | ------- | ----------------------------------- |
-| `with_serde`    | Yes     | Enables serde serialization         |
-| `with_whatlang` | No      | Enables text-language detection     |
+| Flag            | Default | Description                     |
+| --------------- | ------- | ------------------------------- |
+| `with_serde`    | Yes     | Enables serde serialization     |
+| `with_whatlang` | No      | Enables text-language detection |
 
 ## Development
 
@@ -44,6 +46,9 @@ cd demo && mise x -- bun run check && mise x -- bun run build
 
 The browser demo lives under `demo/`. Its `demo/wasm` package is intentionally independent from
 the root Cargo package and depends on `mediakit` through `../..`.
+
+Pushes to `main` rebuild the WASM package, type-check and bundle the demo, and publish `demo/dist`
+to [GitHub Pages](https://jkwill87.github.io/mediakit/) through `.github/workflows/push.yml`.
 
 ## License
 
