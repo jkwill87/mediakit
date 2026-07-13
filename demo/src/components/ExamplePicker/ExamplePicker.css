@@ -1,0 +1,57 @@
+.examples {
+  margin-top: 24px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.examples-label {
+  font-size: 0.8em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.examples-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.example-chip {
+  font-family: 'SF Mono', 'Fira Code', Menlo, Consolas, monospace;
+  font-size: 0.75em;
+  padding: 4px 10px;
+  border-radius: 100px;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    color 0.15s,
+    background 0.15s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 600px) {
+  .example-chip {
+    max-width: calc(100vw - 80px);
+  }
+}
+
+.example-chip:hover {
+  border-color: var(--color-highlight);
+  color: var(--color-highlight);
+  background: var(--color-matched-bg);
+}
+
+.example-chip:focus-visible {
+  outline: 2px solid var(--color-highlight);
+  outline-offset: 2px;
+}

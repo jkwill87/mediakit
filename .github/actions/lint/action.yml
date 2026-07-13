@@ -1,0 +1,17 @@
+name: Lint
+description: Checks Rust formatting, compilation warnings, and Clippy lints
+
+runs:
+  using: composite
+  steps:
+    - name: Checking Formatting
+      run: mise x -- cargo fmt --all -- --check
+      shell: sh
+
+    - name: Checking Rust Targets
+      run: mise run rust:check
+      shell: sh
+
+    - name: Linting with Clippy
+      run: mise run rust:clippy
+      shell: sh

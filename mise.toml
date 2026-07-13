@@ -1,0 +1,38 @@
+[tools]
+rust = "1.97.0"
+bun = "1.3.14"
+"cargo:wasm-pack" = "0.15.0"
+
+[tasks."rust:check"]
+run = "CARGO_BUILD_WARNINGS=deny cargo check --all-targets --all-features --keep-going"
+description = "Check every mediakit target and feature with warnings denied"
+
+[tasks."rust:clippy"]
+run = "cargo clippy --all-targets --all-features -- -Wclippy::nursery"
+
+[tasks."rust:bench"]
+run = "cargo bench"
+description = "Run the mediakit benchmarks"
+
+[tasks."rust:test"]
+run = "cargo test"
+description = "Run the mediakit tests"
+
+[tasks.lint]
+depends = ["rust:check", "rust:clippy"]
+
+[tasks.test]
+run = "cargo test"
+description = "Run the mediakit test suite"
+
+[tasks."demo:dev"]
+run = "bun ./index.html"
+dir = "demo"
+description = "Run the browser demo development server"
+
+[tasks."demo:build"]
+run = """
+wasm-pack build --target=web --out-dir=pkg demo/wasm
+du -sh demo/wasm/pkg/mediakit_wasm_bg.wasm
+"""
+description = "Build the demo WebAssembly package"

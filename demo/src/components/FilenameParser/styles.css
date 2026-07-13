@@ -1,0 +1,79 @@
+.input-label {
+  display: block;
+  font-size: 0.8em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  margin-bottom: 6px;
+}
+
+.container {
+  display: block;
+  font-family: 'SF Mono', 'Fira Code', 'Fira Mono', Menlo, Consolas, monospace;
+  font-weight: 600;
+  font-size: 1.05em;
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-fg);
+  outline: none;
+  box-sizing: border-box;
+  line-height: 1.6;
+  transition: border-color 0.2s;
+  min-height: 48px;
+}
+
+.container:focus {
+  border-color: var(--color-highlight);
+}
+
+.matched {
+  color: var(--color-highlight);
+  &:hover {
+    cursor: context-menu;
+    border-bottom: 2px solid var(--color-highlight);
+  }
+}
+
+.unmatched {
+  color: var(--color-fg);
+  padding-bottom: 1px;
+}
+
+.delimiter {
+  color: var(--color-grey);
+  padding: 1px;
+}
+
+[data-tooltip]::before {
+  /* needed - do not touch */
+  content: attr(data-tooltip);
+  position: absolute;
+  opacity: 0;
+
+  /* customizable */
+  padding: 4px 8px;
+  color: var(--color-bg);
+  font-family: 'SF Mono', 'Fira Code', Menlo, Consolas, monospace;
+  font-size: 0.8em;
+  font-weight: 500;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+
+[data-tooltip]:hover::before {
+  /* needed - do not touch */
+  opacity: 1;
+
+  background: var(--color-highlight);
+  margin-top: -35px;
+}
+
+[data-tooltip]:not([data-tooltip-persistent])::before {
+  pointer-events: none;
+}

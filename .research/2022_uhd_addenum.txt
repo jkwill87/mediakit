@@ -1,0 +1,81 @@
+High Definition x264 and Ultra High Definition x265 Standards Addendum 1
+Revision 5.0 Addendum 1 - 2022-10-18
+
+[ Intro ]
+When revision 5.0 was made, an attempt was made to write some rules for Dolby Vision and HDR10+ inclusion.
+
+However these rules have been shown not to work, as things have just turned out differently than what was thought back in 2020.
+
+We seem to have come to a point, where Dolby Vision (DV) can now be muxed into mkv files, but it can be done several ways,
+which might look the same in mediainfo, but play very differently, depending on the player used.
+
+This addendum is written to try to create a work flow, that will be used by all groups, and will ONLY cover the parts in the
+rules, that are related to Dolby Vison and HDR10+. It will ensure that all releases will be done the same way, no matter which
+group does the actual release.
+
+FEL vs MEL (RPU)
+Due to the size of the FEL, which can add up to 10-12GB to a release, with close to no gain in quality, it has been decided to
+use just the RPU to make releases. The RPU typically adds 30-50 MB. The FEL can also not just be used on an x265 encode, since
+the frame type and order must be the same in the BL and the EL. Encoding the BL will ruin the original frame order, and the
+FEL will not work.
+
+Dolby Vision Profile
+From what various groups has experienced, it seems like Profile 8 currently has the best compatibility. Surely there will be
+players or TV's that doesn't support Profile 8, but Profile 7 is supported by even less devices.
+
+Only rule 24.2.x will be affected by this addendum, and the rule numbers is this addendum, has nothing to do with the rule
+numbers in the current version of the rules.
+
+Compliance with this document is optional as of its pre date, and mandatory as of 2022-11-01 00:00:00 UTC (1667260800 Unix time).
+
+24.2) Notes
+    24.2.1) If a 4k BD contains DV, the final release must be Profile 8.1 (DV with HDR10 fallback)
+            Suggested workflow:
+            Demux the BL and EL layers
+            Encode the BL layer with x265 following all the rules
+            Use dovi_tool, or other available tools, to inject the RPU from the EL into the encoded BL
+            Make sure to use Profile 8 and use --crop option, unless crop values used for the encode are 0
+            Mux the resulting file
+            The final mkv file should show the following in mediainfo:
+            Dolby Vision, Version 1.0, dvhe.08.06, BL+RPU, HDR10 compatible / SMPTE ST 2086, HDR10 compatible
+    24.2.2) If the movie contains changing AR, the release must be left uncropped.
+            Don't crop when encoding and don't use the --crop option. This way the original "active area" data in the RPU will
+            be maintained, and change accordingly when the AR changes.
+    24.2.3) If a 4k BD contains HDR10+, the HDR10+ metadata must be injected into the encode.
+            Suggested workflow:
+            Extract the HDR10+ metadata using hdr10plus_tool. The result should be a .json file
+            Encode with x265 following all the rules and add "--dhdr10-opt --dhdr10-info <json file>"
+            Mux the resulting file
+            The final mkv file should show the following in mediainfo:
+            SMPTE ST 2094 App 4, Version 1, HDR10+ Profile B compatible
+    24.2.4) If a 4k BD contains DV and HDR10+, first follow rule 24.2.3 and then rule 24.2.1 skipping the x265 encoding part.
+            The resulting file must of course still be able to fall back to HDR10.
+            The final file should show the following in mediainfo:
+            Dolby Vision, Version 1.0, dvhe.08.06, BL+RPU, HDR10 compatible / SMPTE ST 2094 App 4, Version 1, HDR10+ Profile
+            B compatible
+    24.2.5) Preing a release including DV/HDR10+ of a previous release pred before this addendum, is not allowed and will be
+            considered a dupe of the previous release. Use INTERNAL for such releases.
+    24.2.6) It must be noted in the nfo, what the release contains. SDR/HDR10/HDR10+/DV.
+
+
+
+[ Signed (in alphabetical order) - 28 Groups ]
+
+AMIABLE ARCHiViST DAA B0MBARDIERS DoNE FACELESSCREW FLAME GAZPROM GMAY GreenBlade GUHZER HAiDEAF IcHoR IAMABLE iNGOT JustWatch
+MiMiC OADG PSYCHD RCDiVX RedBlade REWARD SCOTLUHD SHORTBREHD SURCODE WATCHABLE WEST YAMG
+
+
+[ Refused to Sign (in alphabetical order) - 0 Groups ]
+
+
+
+[ Revisions ]
+2007-04-28 - High.Def.x264.movie.standards.rls.1-NFO
+2007-07-05 - High.Def.x264.Movie.Standards.Rev2
+2008-10-13 - High.Definition.x264.Standards.Revision.3.0-HDX
+2008-12-20 - High.Definition.x264.Standards.Revision.3.1-HDX
+2009-01-27 - High.Definition.x264.Standards.Revision.3.1.Addendum.1-HDX
+2011-01-29 - High.Definition.x264.Standards.Revision.4.0-HDX
+2011-01-29 - High.Definition.x264.Standards.Revision.4.0.UPDATE-HDX
+2020-04-15 - High.Definition.x264.and.Ultra.High.Definition.x265.Standards.Revision.5.0-HDX - Total rewrite, hardened all rules, switched to CRF, UHD and x265 are supported.
+2022-10-18 - High.Definition.x264.and.Ultra.High.Definition.x265.Standards.Revision.5.0.Addendum.1-HDX - Rules concerning Dolby Vision and HDR10+ totally rewritten

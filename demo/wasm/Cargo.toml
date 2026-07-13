@@ -1,0 +1,39 @@
+[package]
+name = "mediakit-wasm"
+version = "0.1.0"
+description = "WebAssembly bindings for the mediakit browser demo"
+license-file = "../LICENSE.txt"
+edition = "2024"
+rust-version = "1.97"
+repository = "https://github.com/jkwill87/mediakit"
+publish = false
+
+[dependencies.mediakit]
+path = "../.."
+version = "0.1.0"
+features = ["with_serde"]
+
+[dependencies]
+console_error_panic_hook = "0.1"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde-wasm-bindgen = "0.6"
+tsify = "0.5"
+wasm-bindgen = "0.2"
+
+[lib]
+crate-type = ["cdylib"]
+
+[lints.rust]
+unsafe_code = "forbid"
+unused = { level = "warn", priority = -1 }
+
+[lints.clippy]
+nursery = { level = "warn", priority = -1 }
+allow_attributes = "warn"
+allow_attributes_without_reason = "warn"
+
+[profile.release]
+opt-level = "z"
+lto = true
+panic = "abort"

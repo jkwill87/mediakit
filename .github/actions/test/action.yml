@@ -1,0 +1,9 @@
+name: Test
+description: Runs the mediakit test suite
+
+runs:
+  using: composite
+  steps:
+    - name: Running Tests
+      run: mise test
+      shell: sh

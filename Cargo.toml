@@ -1,0 +1,57 @@
+[package]
+name = "mediakit"
+version = "0.1.0"
+description = "Parse media filenames and container metadata into structured Rust types"
+license = "MIT"
+edition = "2024"
+rust-version = "1.97"
+repository = "https://github.com/jkwill87/mediakit"
+include = [
+    "/src/**",
+    "/tests/**",
+    "/benches/**",
+    "/examples/**",
+    "/Cargo.toml",
+    "/README.md",
+    "/LICENSE.txt",
+]
+
+[features]
+default = ["with_serde"]
+with_serde = ["serde"]
+with_whatlang = ["whatlang"]
+
+[dependencies]
+const_format = "0.2"
+regex-automata = "0.4"
+thiserror = "2.0"
+
+[dependencies.serde]
+version = "1.0"
+features = ["derive"]
+optional = true
+
+[dependencies.whatlang]
+version = "0.18"
+optional = true
+
+[dev-dependencies]
+criterion = "0.8.2"
+
+[[bench]]
+name = "filename_inspector"
+harness = false
+
+[lints.rust]
+unsafe_code = "forbid"
+unused = { level = "warn", priority = -1 }
+
+[lints.clippy]
+nursery = { level = "warn", priority = -1 }
+allow_attributes = "warn"
+allow_attributes_without_reason = "warn"
+
+[profile.release]
+opt-level = "z"
+lto = true
+panic = "abort"

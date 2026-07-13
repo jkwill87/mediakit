@@ -1,0 +1,33 @@
+name: Init
+description: Sets up the pinned mise toolchain and Rust build cache
+
+inputs:
+  tools:
+    description: Tool names to install from mise.toml
+    required: false
+    default: rust
+
+  save-cache:
+    description: Whether to save tool and Rust build caches after the job
+    required: false
+    default: "true"
+
+runs:
+  using: composite
+  steps:
+    - name: Installing Toolchain
+      uses: jdx/mise-action@v4
+      with:
+        install_args: ${{ inputs.tools }}
+        cache: true
+        cache_save: ${{ inputs.save-cache }}
+
+    - name: Installing Rust Components
+      if: contains(format(' {0} ', inputs.tools), ' rust ')
+      run: rustup component add clippy rustfmt
+      shell: sh
+
+    - name: Restoring Rust Build Cache
+      uses: Swatinem/rust-cache@v2
+      with:
+        save-if: ${{ inputs.save-cache }}

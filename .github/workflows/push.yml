@@ -1,0 +1,51 @@
+name: push
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/init
+      - uses: ./.github/actions/lint
+
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/init
+      - uses: ./.github/actions/test
+
+  demo:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/init
+        with:
+          tools: rust bun cargo:wasm-pack
+
+      - name: Installing Demo Dependencies
+        working-directory: demo
+        run: mise x -- bun install --frozen-lockfile
+
+      - name: Building WASM Package
+        run: mise run demo:build
+
+      - name: Type Checking Demo
+        working-directory: demo
+        run: mise x -- bun run check
+
+      - name: Building Demo Bundle
+        working-directory: demo
+        run: mise x -- bun run build
