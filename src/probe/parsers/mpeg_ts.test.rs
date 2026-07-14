@@ -28,3 +28,21 @@ fn maps_private_stream_descriptors() {
         Some(AudioCodec::DolbyDigitalPlus)
     );
 }
+
+#[test]
+fn maps_embedded_subtitle_streams() {
+    assert_eq!(subtitle_stream_type(0x90, &[]), Some("pgs"));
+    assert_eq!(
+        subtitle_stream_type(0x06, &[0x59, 0]),
+        Some("dvb_subtitle")
+    );
+    assert_eq!(
+        subtitle_stream_type(0x06, &[0x56, 0]),
+        Some("teletext")
+    );
+    assert_eq!(
+        descriptor_language(&[0x59, 4, b'p', b'o', b'r', 0])
+            .map(|language| language.iso_639_1),
+        Some("pt")
+    );
+}

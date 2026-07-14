@@ -5,7 +5,7 @@ pub mod media_info;
 mod parsers;
 
 pub use error::ProbeError;
-pub use media_info::{AudioStream, MediaInfo, VideoStream};
+pub use media_info::{AudioStream, MediaInfo, SubtitleStream, VideoStream};
 
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};

@@ -1,23 +1,40 @@
-//! Parses ISO-BMFF and QuickTime container metadata.
+//! Parses ISO Base Media File Format and QuickTime metadata.
+//!
+//! Both formats are trees of boxes (historically called atoms in QuickTime).
+//! Each box starts with a big-endian size and a four-byte type. The parser
+//! locates the top-level file-type (`ftyp`) and movie (`moov`) boxes, then walks
+//! only the movie headers, track headers, media descriptions, and sample tables
+//! needed for metadata. Media-data (`mdat`) boxes are never loaded.
+//!
+//! A number of boxes are *FullBoxes*: their payload starts with one version
+//! byte and three flag bytes. Version 1 commonly widens version 0's 32-bit time
+//! fields to 64 bits, which accounts for several explicit offsets below.
 
 use super::binary::{checked_end, fourcc, invalid, read_region, u16_be, u32_be, u64_be};
 use super::{
-    Probe, audio_codec, audio_layout, avc_profile, hevc_profile, video_codec, video_resolution,
+    Probe, audio_codec, audio_layout, avc_profile, fourcc_string, hevc_profile, video_codec,
+    video_resolution,
 };
-use crate::meta::fields::{AudioProfile, VideoDynamicRange};
-use crate::probe::{AudioStream, VideoStream};
+use crate::meta::fields::{AudioProfile, Language, VideoDynamicRange};
+use crate::probe::{AudioStream, SubtitleStream, VideoStream};
 use std::fs::File;
 use std::io::{self, Read, Seek, SeekFrom};
 use std::time::Duration;
 
+/// Maximum recursive descent through nested movie/media/sample-table boxes.
+///
+/// Real files use only a handful of levels; the limit rejects adversarially
+/// deep trees before recursive parsing can exhaust the stack.
 const MAX_BOX_DEPTH: u8 = 12;
 
+/// A box whose payload is borrowed from an already bounded parent.
 #[derive(Clone, Copy)]
 struct BoxView<'a> {
     kind: [u8; 4],
     payload: &'a [u8],
 }
 
+/// Iterates sibling ISO-BMFF boxes within a known-size parent payload.
 struct Boxes<'a> {
     data: &'a [u8],
     offset: usize,
@@ -49,6 +66,9 @@ impl<'a> Iterator for Boxes<'a> {
             Ok(value) => value,
             Err(error) => return Some(Err(error)),
         };
+        // A size of 1 selects the 16-byte header with a 64-bit `largesize`; a
+        // size of 0 extends the box through the end of its parent. All other
+        // sizes include the ordinary eight-byte header.
         let (header, size) = if size32 == 1 {
             if self.data.len().saturating_sub(start) < 16 {
                 self.offset = self.data.len();
@@ -86,6 +106,7 @@ impl<'a> Iterator for Boxes<'a> {
 struct Track {
     enabled: bool,
     handler: Option<[u8; 4]>,
+    language: Option<Language>,
     timescale: u64,
     duration: u64,
     codec: Option<[u8; 4]>,
@@ -109,6 +130,8 @@ pub fn parse(file: &mut File, file_len: u64) -> io::Result<Probe> {
         file.read_exact(&mut header[..8])?;
         let size32 = u32::from_be_bytes(header[..4].try_into().expect("four-byte slice"));
         let kind: [u8; 4] = header[4..8].try_into().expect("four-byte slice");
+        // Apply the same ordinary, extended-size, and to-end size rules used
+        // by the in-memory box iterator.
         let (header_size, size) = if size32 == 1 {
             file.read_exact(&mut header[8..16])?;
             (
@@ -136,6 +159,8 @@ pub fn parse(file: &mut File, file_len: u64) -> io::Result<Probe> {
     }
     let (moov_offset, moov_size) = moov.ok_or_else(|| invalid("ISO-BMFF movie box not found"))?;
     let moov = read_region(file, moov_offset, moov_size, file_len)?;
+    // `ftyp` is a short list of four-byte brands. Only a small bounded prefix
+    // is needed to recognize QuickTime's `qt  ` brand.
     let ftyp = ftyp
         .map(|(offset, size)| read_region(file, offset, size.min(4096), file_len))
         .transpose()?;
@@ -148,6 +173,9 @@ pub fn parse(file: &mut File, file_len: u64) -> io::Result<Probe> {
 }
 
 fn is_quicktime_brand(ftyp: &[u8]) -> bool {
+    // The payload starts with major_brand and minor_version, followed by zero
+    // or more compatible brands. Treating every four-byte word as a candidate
+    // safely includes the major brand and ignores the numeric minor version.
     ftyp.chunks_exact(4).any(|brand| brand == b"qt  ")
 }
 
@@ -166,9 +194,15 @@ fn parse_movie(data: &[u8], container: &'static str) -> io::Result<Probe> {
     probe.duration = movie_duration.and_then(|seconds| Duration::try_from_secs_f64(seconds).ok());
 
     for track in &tracks {
+        // Handler types classify the media independently of its sample-entry
+        // codec. The four subtitle values cover closed captions, subtitles,
+        // MPEG-4 subtitle systems, and QuickTime text tracks respectively.
         match track.handler.as_ref() {
             Some(b"soun") => probe.audio_streams.push(audio_stream(track)),
             Some(b"vide") => probe.video_streams.push(video_stream(track)),
+            Some(b"clcp" | b"sbtl" | b"subt" | b"text") => {
+                probe.subtitle_streams.push(subtitle_stream(track));
+            }
             _ => {}
         }
     }
@@ -179,6 +213,7 @@ fn audio_stream(track: &Track) -> AudioStream {
     AudioStream {
         is_enabled: track.enabled,
         is_default: false,
+        language: track.language,
         codec: track.codec.as_ref().and_then(audio_codec),
         profile: track.audio_profile.clone().or(match track.codec.as_ref() {
             Some(b"dtsh") => Some(AudioProfile::HighResolutionAudio),
@@ -200,6 +235,7 @@ fn video_stream(track: &Track) -> VideoStream {
     VideoStream {
         is_enabled: track.enabled,
         is_default: false,
+        language: track.language,
         codec: track.codec.as_ref().and_then(video_codec),
         profile: track.video_profile.clone(),
         width: u32::try_from(track.width).ok().filter(|value| *value > 0),
@@ -210,10 +246,21 @@ fn video_stream(track: &Track) -> VideoStream {
     }
 }
 
+fn subtitle_stream(track: &Track) -> SubtitleStream {
+    SubtitleStream {
+        is_enabled: track.enabled,
+        is_default: false,
+        language: track.language,
+        codec: track.codec.as_ref().and_then(fourcc_string),
+    }
+}
+
 fn parse_duration(data: &[u8]) -> io::Result<Option<f64>> {
     let version = *data
         .first()
         .ok_or_else(|| invalid("truncated movie header"))?;
+    // `mvhd` version 1 has 64-bit creation/modification times and duration;
+    // version 0 uses 32-bit fields. The timescale remains 32-bit in both.
     let (timescale_offset, duration_offset, duration_size) = if version == 1 {
         (20, 24, 8)
     } else {
@@ -225,6 +272,7 @@ fn parse_duration(data: &[u8]) -> io::Result<Option<f64>> {
     } else {
         u64::from(u32_be(data, duration_offset)?)
     };
+    // All-ones is the specified unknown-duration sentinel at either width.
     Ok(
         (timescale > 0 && duration != u64::MAX && duration != u64::from(u32::MAX))
             .then_some(duration as f64 / timescale as f64),
@@ -248,6 +296,8 @@ fn parse_track(data: &[u8], depth: u8) -> io::Result<Track> {
 }
 
 fn parse_track_header(data: &[u8], track: &mut Track) -> io::Result<()> {
+    // `tkhd` is a FullBox: enabled is flag bit 0, and the final width/height
+    // fields are unsigned 16.16 fixed-point values regardless of box version.
     let flags = u32_be(data, 0)? & 0x00FF_FFFF;
     track.enabled = flags & 1 != 0;
     if data.len() >= 8 {
@@ -265,6 +315,8 @@ fn parse_media(data: &[u8], track: &mut Track, depth: u8) -> io::Result<()> {
         let child = child?;
         match &child.kind {
             b"mdhd" => parse_media_header(child.payload, track)?,
+            // `hdlr` stores handler_type after the four-byte FullBox prefix
+            // and a four-byte pre_defined field.
             b"hdlr" => track.handler = Some(fourcc(child.payload, 8)?),
             b"minf" => parse_children(child.payload, track, depth + 1)?,
             _ => {}
@@ -294,10 +346,12 @@ fn parse_media_header(data: &[u8], track: &mut Track) -> io::Result<()> {
     let version = *data
         .first()
         .ok_or_else(|| invalid("truncated media header"))?;
-    let (timescale_offset, duration_offset, duration_size) = if version == 1 {
-        (20, 24, 8)
+    // As in `mvhd`, version 1 widens creation/modification times and duration
+    // while timescale and the packed language field retain their widths.
+    let (timescale_offset, duration_offset, duration_size, language_offset) = if version == 1 {
+        (20, 24, 8, 32)
     } else {
-        (12, 16, 4)
+        (12, 16, 4, 20)
     };
     track.timescale = u64::from(u32_be(data, timescale_offset)?);
     track.duration = if duration_size == 8 {
@@ -305,10 +359,34 @@ fn parse_media_header(data: &[u8], track: &mut Track) -> io::Result<()> {
     } else {
         u64::from(u32_be(data, duration_offset)?)
     };
+    track.language = data
+        .get(language_offset..language_offset + 2)
+        .map(|_| u16_be(data, language_offset))
+        .transpose()?
+        .and_then(mp4_language);
     Ok(())
 }
 
+fn mp4_language(value: u16) -> Option<Language> {
+    // ISO language codes pack three lowercase letters into 15 bits. Each
+    // 5-bit value is the ASCII letter minus 0x60 (`a` => 1, `z` => 26); zero
+    // and 27..31 are not letters. Legacy QuickTime numeric language codes do
+    // not use this packing and therefore intentionally fail this decoder.
+    let mut identifier = String::with_capacity(3);
+    for shift in [10, 5, 0] {
+        let letter = u8::try_from((value >> shift) & 0x1F).ok()?;
+        if !(1..=26).contains(&letter) {
+            return None;
+        }
+        identifier.push(char::from(b'a' + letter - 1));
+    }
+    Language::from_identifier(&identifier)
+}
+
 fn parse_sample_description(data: &[u8], track: &mut Track) -> io::Result<()> {
+    // `stsd` begins with a four-byte FullBox prefix and a four-byte entry
+    // count. The first sample entry's type is the codec identifier retained by
+    // this metadata-only parser.
     let entries = data
         .get(8..)
         .ok_or_else(|| invalid("truncated sample description"))?;
@@ -325,6 +403,8 @@ fn parse_sample_description(data: &[u8], track: &mut Track) -> io::Result<()> {
 }
 
 fn parse_video_entry(entry: BoxView<'_>, track: &mut Track) -> io::Result<()> {
+    // VisualSampleEntry has a 78-byte fixed payload before codec-specific child
+    // boxes. Width and height are 16-bit integers at payload bytes 24 and 26.
     if entry.payload.len() < 78 {
         return Err(invalid("truncated video sample entry"));
     }
@@ -337,9 +417,13 @@ fn parse_video_entry(entry: BoxView<'_>, track: &mut Track) -> io::Result<()> {
         let child = child?;
         match &child.kind {
             b"avcC" if child.payload.len() >= 2 => {
+                // AVCDecoderConfigurationRecord byte 1 is AVCProfileIndication
+                // (`profile_idc`).
                 track.video_profile = avc_profile(child.payload[1]);
             }
             b"hvcC" if child.payload.len() >= 18 => {
+                // HEVCDecoderConfigurationRecord stores general_profile_idc
+                // in byte 1's low five bits and bitDepthLumaMinus8 in byte 17.
                 let profile = child.payload[1] & 0x1F;
                 let bit_depth = child.payload.get(17).map(|value| 8 + (value & 0x07));
                 track.video_profile = hevc_profile(profile, bit_depth);
@@ -350,6 +434,8 @@ fn parse_video_entry(entry: BoxView<'_>, track: &mut Track) -> io::Result<()> {
             b"colr"
                 if child.payload.starts_with(b"nclx")
                     && child.payload.len() >= 8
+                    // `nclx` transfer_characteristics 16 is SMPTE ST 2084
+                    // (PQ), the transfer function used by HDR10.
                     && u16_be(child.payload, 6)? == 16 =>
             {
                 track.dynamic_range = Some(VideoDynamicRange::HDR10);
@@ -361,6 +447,9 @@ fn parse_video_entry(entry: BoxView<'_>, track: &mut Track) -> io::Result<()> {
 }
 
 fn parse_audio_entry(entry: BoxView<'_>, track: &mut Track) -> io::Result<()> {
+    // AudioSampleEntry version 0 has a 28-byte fixed payload. QuickTime
+    // versions 1 and 2 append 16 and 36 bytes respectively before child boxes;
+    // version 2 also carries a 32-bit channel count at payload byte 40.
     if entry.payload.len() < 28 {
         return Err(invalid("truncated audio sample entry"));
     }
@@ -417,6 +506,8 @@ fn parse_aac_profile(data: &[u8]) -> Option<AudioProfile> {
         let Some(config) = payload.first() else {
             continue;
         };
+        // The first five AudioSpecificConfig bits are audioObjectType:
+        // 2 = AAC LC, 5 = SBR, and 29 = PS (the latter two are HE-AAC).
         return match config >> 3 {
             2 => Some(AudioProfile::LowComplexity),
             5 | 29 => Some(AudioProfile::HighEfficiency),
@@ -427,6 +518,9 @@ fn parse_aac_profile(data: &[u8]) -> Option<AudioProfile> {
 }
 
 fn parse_time_to_sample(data: &[u8], track: &mut Track) -> io::Result<()> {
+    // `stts` stores run-length pairs of (sample_count, sample_delta) after its
+    // four-byte FullBox prefix and four-byte entry count. The weighted mean
+    // delta later converts the media timescale into an average frame rate.
     let count = usize::try_from(u32_be(data, 4)?)
         .map_err(|_| invalid("sample timing count is too large"))?;
     let mut samples = 0_u64;
@@ -453,6 +547,8 @@ fn parse_time_to_sample(data: &[u8], track: &mut Track) -> io::Result<()> {
 }
 
 fn parse_sample_sizes(data: &[u8], track: &mut Track) -> io::Result<()> {
+    // `stsz` supplies one default byte size for every sample, or zero followed
+    // by a 32-bit size for each sample. Summing sizes avoids reading `mdat`.
     let default_size = u64::from(u32_be(data, 4)?);
     let count =
         usize::try_from(u32_be(data, 8)?).map_err(|_| invalid("sample size count is too large"))?;
@@ -475,6 +571,8 @@ fn audio_bit_rate(track: &Track) -> Option<u32> {
     if track.timescale == 0 || track.duration == 0 {
         return None;
     }
+    // Duration is in media-timescale ticks, so bits * timescale / duration is
+    // the average number of bits per second.
     let value = (bytes as u128)
         .checked_mul(8)?
         .checked_mul(u128::from(track.timescale))?

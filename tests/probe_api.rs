@@ -1,6 +1,7 @@
 //! Verifies the public container-probing contract.
 
-use mediakit::probe::{MediaInfo, ProbeError, probe};
+use mediakit::meta::fields::Language;
+use mediakit::probe::{MediaInfo, ProbeError, SubtitleStream, probe};
 
 #[test]
 fn probe_api_is_available_to_external_callers() {
@@ -18,4 +19,17 @@ fn probe_api_is_available_to_external_callers() {
         std::process::id()
     )));
     assert!(matches!(result, Err(ProbeError::Io(_))));
+}
+
+#[test]
+fn embedded_subtitle_stream_type_is_public() {
+    fn assert_language_type(_: Option<Language>) {}
+
+    let stream = SubtitleStream::default();
+
+    assert!(stream.is_enabled);
+    assert!(!stream.is_default);
+    assert_language_type(stream.language);
+    assert_eq!(stream.language, None);
+    assert_eq!(stream.codec, None);
 }

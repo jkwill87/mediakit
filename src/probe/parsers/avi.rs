@@ -1,14 +1,26 @@
-//! Parses AVI container metadata.
+//! Parses AVI metadata from the RIFF header lists.
+//!
+//! AVI stores little-endian RIFF chunks identified by FourCC values. The
+//! `hdrl` list contains one `avih` main header plus a `strl` list for each
+//! stream; the usually large `movi` list contains media payloads and is not
+//! parsed. RIFF chunk sizes exclude the eight-byte chunk header and odd-sized
+//! payloads are followed by one padding byte.
 
 use super::binary::{fourcc, i32_le, invalid, read_region, u16_le, u32_le};
-use super::{Probe, audio_layout, video_codec, video_resolution, wave_audio_codec};
-use crate::probe::{AudioStream, VideoStream};
+use super::{Probe, audio_layout, fourcc_string, video_codec, video_resolution, wave_audio_codec};
+use crate::probe::{AudioStream, SubtitleStream, VideoStream};
 use std::fs::File;
 use std::io;
 use std::time::Duration;
 
+/// Maximum prefix inspected while looking for AVI header lists (16 MiB).
+///
+/// The metadata normally precedes `movi`; bounding the prefix prevents a
+/// malformed RIFF size from making the parser copy media payloads into memory.
 const MAX_AVI_HEADER_BYTES: u64 = 16 * 1024 * 1024;
 
+/// Fields retained from an `AVISTREAMHEADER` (`strh`) and its adjacent stream
+/// format (`strf`) chunk.
 #[derive(Default)]
 struct Stream {
     kind: Option<[u8; 4]>,
@@ -41,6 +53,8 @@ pub fn parse(file: &mut File, file_len: u64) -> io::Result<Probe> {
     )?;
 
     if microseconds_per_frame > 0 && total_frames > 0 {
+        // AVIMAINHEADER gives overall timing as frame count multiplied by the
+        // nominal microseconds between frames.
         probe.duration = Some(Duration::from_micros(
             u64::from(microseconds_per_frame).saturating_mul(u64::from(total_frames)),
         ));
@@ -54,6 +68,8 @@ pub fn parse(file: &mut File, file_len: u64) -> io::Result<Probe> {
                     && stream.rate > 0
                     && stream.length > 0
                 {
+                    // AVISTREAMHEADER defines rate / scale as samples per
+                    // second, so length * scale / rate is the stream duration.
                     probe.duration = Duration::try_from_secs_f64(
                         f64::from(stream.length) * f64::from(stream.scale) / f64::from(stream.rate),
                     )
@@ -62,6 +78,11 @@ pub fn parse(file: &mut File, file_len: u64) -> io::Result<Probe> {
                 probe.video_streams.push(video);
             }
             Some(b"auds") => probe.audio_streams.push(audio_stream(stream)?),
+            Some(b"txts") => probe.subtitle_streams.push(SubtitleStream {
+                is_enabled: !stream.disabled,
+                codec: stream.handler.as_ref().and_then(fourcc_string),
+                ..SubtitleStream::default()
+            }),
             _ => {}
         }
     }
@@ -74,6 +95,9 @@ fn video_stream(
     default_height: u64,
     microseconds_per_frame: u32,
 ) -> io::Result<VideoStream> {
+    // A video `strf` is a BITMAPINFOHEADER: dimensions begin at byte 4 and the
+    // compression FourCC at byte 16. The stream handler is the fallback codec
+    // identifier when that structure is absent or abbreviated.
     let compression = stream
         .format
         .get(16..20)
@@ -97,6 +121,7 @@ fn video_stream(
     Ok(VideoStream {
         is_enabled: !stream.disabled,
         is_default: false,
+        language: None,
         codec: compression.as_ref().and_then(video_codec),
         profile: None,
         width: u32::try_from(width).ok().filter(|value| *value > 0),
@@ -118,6 +143,8 @@ fn audio_stream(stream: &Stream) -> io::Result<AudioStream> {
     let channels = u64::from(u16_le(&stream.format, 2)?);
     let average_bytes = u32_le(&stream.format, 8)?;
     let mut channel_mask = None;
+    // WAVE_FORMAT_EXTENSIBLE (0xFFFE) stores the speaker mask at byte 20 and
+    // repeats the actual WAVE format tag at the start of its SubFormat GUID.
     if format_tag == 0xFFFE && stream.format.len() >= 40 {
         channel_mask = Some(u32_le(&stream.format, 20)?);
         format_tag = u16_le(&stream.format, 24)?;
@@ -125,6 +152,7 @@ fn audio_stream(stream: &Stream) -> io::Result<AudioStream> {
     Ok(AudioStream {
         is_enabled: !stream.disabled,
         is_default: false,
+        language: None,
         codec: wave_audio_codec(format_tag),
         profile: None,
         layout: audio_layout(channels, channel_mask),
@@ -158,6 +186,8 @@ fn parse_chunks(
         let payload = &data[payload_start..end];
         match &kind {
             b"avih" if payload.len() >= 40 => {
+                // AVIMAINHEADER fields used here are dwMicroSecPerFrame,
+                // dwTotalFrames, dwWidth, and dwHeight respectively.
                 *microseconds_per_frame = u32_le(payload, 0)?;
                 *total_frames = u32_le(payload, 16)?;
                 *width = u64::from(u32_le(payload, 32)?);
@@ -178,6 +208,8 @@ fn parse_chunks(
             }
             _ => {}
         }
+        // RIFF chunks are word-aligned; an odd payload size consumes one pad
+        // byte that is not included in the declared chunk size.
         offset = end + (size & 1);
     }
     Ok(())
@@ -199,6 +231,8 @@ fn parse_stream(data: &[u8]) -> io::Result<Stream> {
             .ok_or_else(|| invalid("AVI stream chunk exceeds parent"))?;
         match &kind {
             b"strh" if payload.len() >= 36 => {
+                // AVISTREAMHEADER: fccType, fccHandler, dwFlags, dwScale,
+                // dwRate, and dwLength. AVISF_DISABLED is flag bit zero.
                 stream.kind = Some(fourcc(payload, 0)?);
                 stream.handler = Some(fourcc(payload, 4)?);
                 stream.disabled = u32_le(payload, 8)? & 1 != 0;
@@ -209,6 +243,7 @@ fn parse_stream(data: &[u8]) -> io::Result<Stream> {
             b"strf" => stream.format = payload.to_vec(),
             _ => {}
         }
+        // Stream-list chunks use the same RIFF word alignment.
         offset = end + (size & 1);
     }
     Ok(stream)

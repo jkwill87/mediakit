@@ -54,6 +54,12 @@ fn mp4_header(timescale: u32, duration: u32) -> Vec<u8> {
     data
 }
 
+fn mp4_media_header(timescale: u32, duration: u32) -> Vec<u8> {
+    let mut data = mp4_header(timescale, duration);
+    data.extend_from_slice(&0x15C7_u16.to_be_bytes()); // `eng` as packed ISO-639-2/T.
+    data
+}
+
 fn mp4_track(handler: &[u8; 4], codec: &[u8; 4], enabled: bool) -> Vec<u8> {
     let mut tkhd = vec![0; 28];
     tkhd[3] = u8::from(enabled);
@@ -98,7 +104,7 @@ fn mp4_track(handler: &[u8; 4], codec: &[u8; 4], enabled: bool) -> Vec<u8> {
     let minf = mp4_box(b"minf", &stbl);
     let mdhd = mp4_box(
         b"mdhd",
-        &mp4_header(
+        &mp4_media_header(
             if handler == b"vide" { 30_000 } else { 48_000 },
             if handler == b"vide" { 300_000 } else { 480_000 },
         ),
@@ -119,6 +125,7 @@ fn mp4_fixture() -> Vec<u8> {
     moov.extend_from_slice(&mp4_track(b"vide", b"hvc1", true));
     moov.extend_from_slice(&mp4_track(b"soun", b"mp4a", false));
     moov.extend_from_slice(&mp4_track(b"soun", b"ec-3", true));
+    moov.extend_from_slice(&mp4_track(b"subt", b"tx3g", true));
     ftyp.extend_from_slice(&mp4_box(b"moov", &moov));
     ftyp
 }
@@ -146,18 +153,27 @@ fn ebml_uint(id: &[u8], value: u64) -> Vec<u8> {
     ebml(id, &bytes[start..])
 }
 
-fn matroska_track(kind: u64, codec: &str, enabled: bool, default: bool) -> Vec<u8> {
+fn matroska_track(
+    kind: u64,
+    codec: &str,
+    enabled: bool,
+    default: bool,
+    language: Option<&str>,
+) -> Vec<u8> {
     let mut track = ebml_uint(&[0x83], kind);
     track.extend_from_slice(&ebml_uint(&[0xB9], u64::from(enabled)));
     track.extend_from_slice(&ebml_uint(&[0x88], u64::from(default)));
     track.extend_from_slice(&ebml(&[0x86], codec.as_bytes()));
+    if let Some(language) = language {
+        track.extend_from_slice(&ebml(&[0x22, 0xB5, 0x9C], language.as_bytes()));
+    }
     if kind == 1 {
         track.extend_from_slice(&ebml_uint(&[0x23, 0xE3, 0x83], 33_333_333));
         let mut video = ebml_uint(&[0xB0], 1920);
         video.extend_from_slice(&ebml_uint(&[0xBA], 1080));
         video.extend_from_slice(&ebml_uint(&[0x9A], 2));
         track.extend_from_slice(&ebml(&[0xE0], &video));
-    } else {
+    } else if kind == 2 {
         track.extend_from_slice(&ebml(&[0xE1], &ebml_uint(&[0x9F], 6)));
     }
     ebml(&[0xAE], &track)
@@ -168,10 +184,17 @@ fn matroska_fixture() -> Vec<u8> {
     let mut info = ebml_uint(&[0x2A, 0xD7, 0xB1], 1_000_000);
     info.extend_from_slice(&ebml(&[0x44, 0x89], &10_f64.to_be_bytes()));
     let info = ebml(&[0x15, 0x49, 0xA9, 0x66], &info);
-    let mut tracks = matroska_track(1, "V_MPEG4/ISO/AVC", false, false);
-    tracks.extend_from_slice(&matroska_track(1, "V_VP9", true, true));
-    tracks.extend_from_slice(&matroska_track(2, "A_AAC", false, false));
-    tracks.extend_from_slice(&matroska_track(2, "A_OPUS", true, true));
+    let mut tracks = matroska_track(1, "V_MPEG4/ISO/AVC", false, false, None);
+    tracks.extend_from_slice(&matroska_track(1, "V_VP9", true, true, None));
+    tracks.extend_from_slice(&matroska_track(2, "A_AAC", false, false, Some("eng")));
+    tracks.extend_from_slice(&matroska_track(2, "A_OPUS", true, true, Some("jpn")));
+    tracks.extend_from_slice(&matroska_track(
+        17,
+        "S_TEXT/UTF8",
+        true,
+        false,
+        Some("spa"),
+    ));
     let tracks = ebml(&[0x16, 0x54, 0xAE, 0x6B], &tracks);
     let mut segment = info;
     segment.extend_from_slice(&tracks);
@@ -225,6 +248,7 @@ fn avi_fixture() -> Vec<u8> {
     hdrl.extend_from_slice(&avi_stream(b"vids", b"H264", &video, false));
     hdrl.extend_from_slice(&avi_stream(b"auds", &[0; 4], &audio, true));
     hdrl.extend_from_slice(&avi_stream(b"auds", &[0; 4], &audio, false));
+    hdrl.extend_from_slice(&avi_stream(b"txts", b"UTF8", &[], false));
     let hdrl = riff_chunk(b"LIST", &hdrl);
     let mut output = b"RIFF".to_vec();
     output.extend_from_slice(&u32::try_from(hdrl.len() + 4).unwrap().to_le_bytes());
@@ -318,8 +342,9 @@ fn ts_fixture() -> Vec<u8> {
         0x00, 0xB0, 0x0D, 0, 1, 0xC1, 0, 0, 0, 1, 0xE1, 0, 0, 0, 0, 0,
     ];
     let pmt = [
-        0x02, 0xB0, 0x21, 0, 1, 0xC1, 0, 0, 0xE1, 1, 0xF0, 0, 0x24, 0xE1, 1, 0xF0, 0, 0x1B, 0xE1,
-        2, 0xF0, 0, 0x87, 0xE1, 3, 0xF0, 0, 0x0F, 0xE1, 4, 0xF0, 0, 0, 0, 0, 0,
+        0x02, 0xB0, 0x26, 0, 1, 0xC1, 0, 0, 0xE1, 1, 0xF0, 0, 0x24, 0xE1, 1, 0xF0, 0, 0x1B, 0xE1,
+        2, 0xF0, 0, 0x87, 0xE1, 3, 0xF0, 0, 0x0F, 0xE1, 4, 0xF0, 0, 0x90, 0xE1, 5, 0xF0, 0, 0, 0,
+        0, 0,
     ];
     let mut output = ts_packet(0, true, &pat);
     output.extend_from_slice(&ts_packet(0x100, true, &pmt));
@@ -331,17 +356,37 @@ fn ts_fixture() -> Vec<u8> {
 
 #[test]
 fn public_probe_enumerates_streams_for_every_supported_container() {
-    for (extension, data) in [
-        ("mp4", mp4_fixture()),
-        ("mkv", matroska_fixture()),
-        ("avi", avi_fixture()),
-        ("wmv", asf_fixture()),
-        ("ts", ts_fixture()),
+    for (extension, data, subtitle_codec, subtitle_language) in [
+        ("mp4", mp4_fixture(), Some("tx3g"), Some("en")),
+        (
+            "mkv",
+            matroska_fixture(),
+            Some("S_TEXT/UTF8"),
+            Some("es"),
+        ),
+        ("avi", avi_fixture(), Some("UTF8"), None),
+        ("wmv", asf_fixture(), None, None),
+        ("ts", ts_fixture(), Some("pgs"), None),
     ] {
         let fixture = Fixture::new(extension, &data);
         let info = probe(&fixture.path).unwrap();
         assert_eq!(info.video_streams.len(), 2, "{extension}");
         assert_eq!(info.audio_streams.len(), 2, "{extension}");
+        assert_eq!(
+            info.subtitle_streams
+                .first()
+                .and_then(|stream| stream.codec.as_deref()),
+            subtitle_codec,
+            "{extension}"
+        );
+        assert_eq!(
+            info.subtitle_streams
+                .first()
+                .and_then(|stream| stream.language)
+                .map(|language| language.iso_639_1),
+            subtitle_language,
+            "{extension}"
+        );
     }
 }
 

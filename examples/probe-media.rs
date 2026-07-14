@@ -59,5 +59,9 @@ fn main() -> ExitCode {
         println!("video_stream[{index}] primary={primary}: {stream:#?}");
     }
 
+    for (index, stream) in media.subtitle_streams.iter().enumerate() {
+        println!("subtitle_stream[{index}]: {stream:#?}");
+    }
+
     ExitCode::SUCCESS
 }

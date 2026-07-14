@@ -51,8 +51,8 @@ fn ts_fixture() -> Vec<u8> {
         0x00, 0xB0, 0x0D, 0, 1, 0xC1, 0, 0, 0, 1, 0xE1, 0, 0, 0, 0, 0,
     ];
     let pmt = [
-        0x02, 0xB0, 0x1C, 0, 1, 0xC1, 0, 0, 0xE1, 1, 0xF0, 0, 0x24, 0xE1, 1, 0xF0, 0, 0x1B, 0xE1,
-        2, 0xF0, 0, 0x87, 0xE1, 3, 0xF0, 0, 0, 0, 0, 0,
+        0x02, 0xB0, 0x21, 0, 1, 0xC1, 0, 0, 0xE1, 1, 0xF0, 0, 0x24, 0xE1, 1, 0xF0, 0, 0x1B, 0xE1,
+        2, 0xF0, 0, 0x87, 0xE1, 3, 0xF0, 0, 0x90, 0xE1, 4, 0xF0, 0, 0, 0, 0, 0,
     ];
     let mut output = ts_packet(0, true, &pat);
     output.extend_from_slice(&ts_packet(0x100, true, &pmt));
@@ -69,12 +69,14 @@ fn public_probe_enumerates_transport_stream_tracks() {
     assert_eq!(info.container, "ts");
     assert_eq!(info.video_streams.len(), 2);
     assert_eq!(info.audio_streams.len(), 1);
+    assert_eq!(info.subtitle_streams.len(), 1);
     assert_eq!(info.video_streams[0].codec, Some(VideoCodec::H265));
     assert_eq!(info.video_streams[1].codec, Some(VideoCodec::H264));
     assert_eq!(
         info.audio_streams[0].codec,
         Some(AudioCodec::DolbyDigitalPlus)
     );
+    assert_eq!(info.subtitle_streams[0].codec.as_deref(), Some("pgs"));
 }
 
 #[test]

@@ -1,7 +1,7 @@
 //! Defines ordered container and stream metadata from probing.
 
 use crate::meta::fields::{
-    AudioCodec, AudioLayout, AudioProfile, VideoCodec, VideoDynamicRange, VideoProfile,
+    AudioCodec, AudioLayout, AudioProfile, Language, VideoCodec, VideoDynamicRange, VideoProfile,
     VideoResolution,
 };
 use std::time::Duration;
@@ -18,6 +18,8 @@ pub struct MediaInfo {
     pub audio_streams: Vec<AudioStream>,
     /// Video streams in container order.
     pub video_streams: Vec<VideoStream>,
+    /// Embedded subtitle streams in container order.
+    pub subtitle_streams: Vec<SubtitleStream>,
 }
 
 impl MediaInfo {
@@ -27,6 +29,7 @@ impl MediaInfo {
             duration: None,
             audio_streams: Vec::new(),
             video_streams: Vec::new(),
+            subtitle_streams: Vec::new(),
         }
     }
 
@@ -67,6 +70,8 @@ pub struct AudioStream {
     pub is_enabled: bool,
     /// Whether the container marks the stream as the default.
     pub is_default: bool,
+    /// The normalized language declared by the container.
+    pub language: Option<Language>,
     /// The detected audio codec.
     pub codec: Option<AudioCodec>,
     /// The detected codec profile.
@@ -82,6 +87,7 @@ impl Default for AudioStream {
         Self {
             is_enabled: true,
             is_default: false,
+            language: None,
             codec: None,
             profile: None,
             layout: None,
@@ -98,6 +104,8 @@ pub struct VideoStream {
     pub is_enabled: bool,
     /// Whether the container marks the stream as the default.
     pub is_default: bool,
+    /// The normalized language declared by the container.
+    pub language: Option<Language>,
     /// The detected video codec.
     pub codec: Option<VideoCodec>,
     /// The detected codec profile.
@@ -119,6 +127,7 @@ impl Default for VideoStream {
         Self {
             is_enabled: true,
             is_default: false,
+            language: None,
             codec: None,
             profile: None,
             width: None,
@@ -126,6 +135,31 @@ impl Default for VideoStream {
             resolution: None,
             frame_rate: None,
             dynamic_range: None,
+        }
+    }
+}
+
+/// Technical metadata for one embedded subtitle stream.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub struct SubtitleStream {
+    /// Whether the container marks the stream as enabled.
+    pub is_enabled: bool,
+    /// Whether the container marks the stream as the default.
+    pub is_default: bool,
+    /// The normalized language declared by the container.
+    pub language: Option<Language>,
+    /// The container's subtitle codec identifier, such as `S_TEXT/UTF8`, `tx3g`, or `pgs`.
+    pub codec: Option<String>,
+}
+
+impl Default for SubtitleStream {
+    fn default() -> Self {
+        Self {
+            is_enabled: true,
+            is_default: false,
+            language: None,
+            codec: None,
         }
     }
 }

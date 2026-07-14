@@ -16,6 +16,11 @@ pub const LANG_ARABIC: Language = Language {
     iso_639_1: "ar",
     iso_639_3: "ara",
 };
+pub const LANG_BULGARIAN: Language = Language {
+    name: "bulgarian",
+    iso_639_1: "bg",
+    iso_639_3: "bul",
+};
 pub const LANG_CHINESE: Language = Language {
     name: "chinese",
     iso_639_1: "zh",
@@ -45,6 +50,11 @@ pub const LANG_DUTCH: Language = Language {
     name: "dutch",
     iso_639_1: "nl",
     iso_639_3: "nld",
+};
+pub const LANG_ESTONIAN: Language = Language {
+    name: "estonian",
+    iso_639_1: "et",
+    iso_639_3: "est",
 };
 pub const LANG_ENGLISH: Language = Language {
     name: "english",
@@ -81,6 +91,11 @@ pub const LANG_HUNGARIAN: Language = Language {
     iso_639_1: "hu",
     iso_639_3: "hun",
 };
+pub const LANG_INDONESIAN: Language = Language {
+    name: "indonesian",
+    iso_639_1: "id",
+    iso_639_3: "ind",
+};
 pub const LANG_FINNISH: Language = Language {
     name: "finnish",
     iso_639_1: "fi",
@@ -106,10 +121,40 @@ pub const LANG_KOREAN: Language = Language {
     iso_639_1: "ko",
     iso_639_3: "kor",
 };
+pub const LANG_LATVIAN: Language = Language {
+    name: "latvian",
+    iso_639_1: "lv",
+    iso_639_3: "lav",
+};
+pub const LANG_LITHUANIAN: Language = Language {
+    name: "lithuanian",
+    iso_639_1: "lt",
+    iso_639_3: "lit",
+};
+pub const LANG_MACEDONIAN: Language = Language {
+    name: "macedonian",
+    iso_639_1: "mk",
+    iso_639_3: "mkd",
+};
+pub const LANG_MALAY: Language = Language {
+    name: "malay",
+    iso_639_1: "ms",
+    iso_639_3: "msa",
+};
+pub const LANG_MONGOLIAN: Language = Language {
+    name: "mongolian",
+    iso_639_1: "mn",
+    iso_639_3: "mon",
+};
 pub const LANG_NORWEGIAN: Language = Language {
     name: "norwegian",
     iso_639_1: "no",
     iso_639_3: "nor",
+};
+pub const LANG_NORWEGIAN_BOKMAL: Language = Language {
+    name: "norwegian bokmål",
+    iso_639_1: "nb",
+    iso_639_3: "nob",
 };
 pub const LANG_POLISH: Language = Language {
     name: "polish",
@@ -140,6 +185,16 @@ pub const LANG_ROMANIAN: Language = Language {
     name: "romanian",
     iso_639_1: "ro",
     iso_639_3: "ron",
+};
+pub const LANG_SERBIAN: Language = Language {
+    name: "serbian",
+    iso_639_1: "sr",
+    iso_639_3: "srp",
+};
+pub const LANG_SLOVAK: Language = Language {
+    name: "slovak",
+    iso_639_1: "sk",
+    iso_639_3: "slk",
 };
 pub const LANG_SLOVENIAN: Language = Language {
     name: "slovenian",
@@ -182,11 +237,12 @@ pub const LANG_VIETNAMESE: Language = Language {
     iso_639_3: "vie",
 };
 
-const LANG_ALL_COUNT: usize = 34;
+const LANG_ALL_COUNT: usize = 45;
 
 /// A list of all languages that are known and supported by the library.
 pub const LANG_ALL: [&Language; LANG_ALL_COUNT] = [
     &LANG_ARABIC,
+    &LANG_BULGARIAN,
     &LANG_CATALAN,
     &LANG_CHINESE,
     &LANG_CROATIAN,
@@ -194,6 +250,7 @@ pub const LANG_ALL: [&Language; LANG_ALL_COUNT] = [
     &LANG_DANISH,
     &LANG_DUTCH,
     &LANG_ENGLISH,
+    &LANG_ESTONIAN,
     &LANG_FINNISH,
     &LANG_FRENCH,
     &LANG_GERMAN,
@@ -202,16 +259,25 @@ pub const LANG_ALL: [&Language; LANG_ALL_COUNT] = [
     &LANG_HINDI,
     &LANG_HUNGARIAN,
     &LANG_ICELANDIC,
+    &LANG_INDONESIAN,
     &LANG_ITALIAN,
     &LANG_JAPANESE,
     &LANG_KOREAN,
     &LANG_LATIN,
+    &LANG_LATVIAN,
+    &LANG_LITHUANIAN,
+    &LANG_MACEDONIAN,
+    &LANG_MALAY,
+    &LANG_MONGOLIAN,
     &LANG_NORWEGIAN,
+    &LANG_NORWEGIAN_BOKMAL,
     &LANG_PERSIAN,
     &LANG_POLISH,
     &LANG_PORTUGUESE,
     &LANG_ROMANIAN,
     &LANG_RUSSIAN,
+    &LANG_SERBIAN,
+    &LANG_SLOVAK,
     &LANG_SLOVENIAN,
     &LANG_SPANISH,
     &LANG_SWEDISH,
@@ -278,6 +344,10 @@ impl Language {
             "gre" => "el",
             "ice" => "is",
             "jp" => "ja",
+            "khk" => "mn",
+            "mac" => "mk",
+            "may" => "ms",
+            "slo" => "sk",
             "engb" | "enus" => "en",
             "esp"
             | "espanol"

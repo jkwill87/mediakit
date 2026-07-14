@@ -23,7 +23,7 @@ for tag in inspector.tags() {
 
 `FilenameInspector` parses filename metadata. `FileInspector` adds size, format, MIME, and bounded
 header probing for Matroska/WebM, ISO-BMFF/QuickTime, AVI, MPEG-TS/M2TS, and ASF/WMV. The public
-`mediakit::probe` API exposes ordered audio and video streams with typed errors.
+`mediakit::probe` API exposes ordered video, audio, and embedded subtitle streams with typed errors.
 
 ## Feature flags
 

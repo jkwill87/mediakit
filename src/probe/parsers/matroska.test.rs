@@ -32,6 +32,44 @@ fn maps_media_info_codec_ids() {
 }
 
 #[test]
+fn retains_embedded_subtitle_codec_ids_and_flags() {
+    let track = Track {
+        kind: 17,
+        enabled: false,
+        default: true,
+        codec_id: "S_TEXT/ASS".to_owned(),
+        language: Some("eng".to_owned()),
+        language_ietf: Some("en-US".to_owned()),
+        ..Track::default()
+    };
+    let stream = subtitle_stream(&track);
+
+    assert!(!stream.is_enabled);
+    assert!(stream.is_default);
+    assert_eq!(
+        stream.language.map(|language| language.iso_639_1),
+        Some("en")
+    );
+    assert_eq!(stream.codec.as_deref(), Some("S_TEXT/ASS"));
+}
+
+#[test]
+fn ietf_language_overrides_legacy_language() {
+    let data = [
+        0x22, 0xB5, 0x9C, 0x83, b'e', b'n', b'g', 0x22, 0xB5, 0x9D, 0x85, b'e', b'n', b'-',
+        b'U', b'S',
+    ];
+    let track = parse_track(&data).unwrap();
+
+    assert_eq!(track.language.as_deref(), Some("eng"));
+    assert_eq!(track.language_ietf.as_deref(), Some("en-US"));
+    assert_eq!(
+        track_language(&track).map(|language| language.iso_639_1),
+        Some("en")
+    );
+}
+
+#[test]
 fn missing_track_flags_use_matroska_defaults() {
     let track = Track::default();
     assert!(track.enabled);

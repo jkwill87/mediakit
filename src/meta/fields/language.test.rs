@@ -10,6 +10,11 @@ fn resolves_extended_languages_and_bibliographic_aliases() {
         ("fre", "fr"),
         ("ger", "de"),
         ("rum", "ro"),
+        ("mac", "mk"),
+        ("may", "ms"),
+        ("slo", "sk"),
+        ("khk", "mn"),
+        ("nob", "nb"),
         ("tel", "te"),
         ("español", "es"),
         ("vfi", "fr"),
@@ -56,4 +61,26 @@ fn resolves_release_aliases_affixes_and_primary_language_tags() {
             "{identifier}"
         );
     }
+}
+
+#[test]
+fn resolves_every_embedded_track_language_from_sample_file() {
+    let identifiers = [
+        "en", "en", "bg", "ca", "cs", "da", "de", "el", "es", "es", "et", "fi", "fr",
+        "he", "hr", "hu", "id", "is", "it", "khk", "lt", "lv", "mk", "ms", "nb", "nl",
+        "pl", "pt", "pt", "ro", "sk", "sl", "sr", "sv", "th", "tr", "zh", "zh", "zh",
+        "es", "pt",
+    ];
+
+    assert_eq!(identifiers.len(), 41);
+    for identifier in identifiers {
+        assert!(
+            Language::from_identifier(identifier).is_some(),
+            "{identifier}"
+        );
+    }
+    assert_eq!(
+        Language::from_identifier("khk").map(|language| language.iso_639_1),
+        Some("mn")
+    );
 }

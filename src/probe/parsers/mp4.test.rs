@@ -45,3 +45,31 @@ fn finds_nested_aac_audio_specific_config() {
     let esds = [0, 0, 0, 0, 0x03, 6, 0, 0, 0x05, 1, 2 << 3];
     assert_eq!(parse_aac_profile(&esds), Some(AudioProfile::LowComplexity));
 }
+
+#[test]
+fn retains_embedded_subtitle_codec_ids() {
+    let track = Track {
+        enabled: true,
+        handler: Some(*b"subt"),
+        language: Language::from_identifier("eng"),
+        codec: Some(*b"tx3g"),
+        ..Track::default()
+    };
+    let stream = subtitle_stream(&track);
+
+    assert!(stream.is_enabled);
+    assert_eq!(
+        stream.language.map(|language| language.iso_639_1),
+        Some("en")
+    );
+    assert_eq!(stream.codec.as_deref(), Some("tx3g"));
+}
+
+#[test]
+fn decodes_packed_media_language() {
+    assert_eq!(
+        mp4_language(0x15C7).map(|language| language.iso_639_1),
+        Some("en")
+    );
+    assert_eq!(mp4_language(0), None);
+}
