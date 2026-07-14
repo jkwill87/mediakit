@@ -93,6 +93,15 @@ impl TryFrom<Token> for TokenExcerpt {
     }
 }
 
+fn utf16_position(value: &str, byte_position: i32) -> i32 {
+    let byte_position =
+        usize::try_from(byte_position).expect("token position should be non-negative");
+    let prefix = value
+        .get(..byte_position)
+        .expect("token position should be a UTF-8 character boundary");
+    i32::try_from(prefix.encode_utf16().count()).expect("token position should fit in an i32")
+}
+
 #[derive(Tsify, Serialize)]
 #[tsify(into_wasm_abi)]
 pub struct InspectResult {
@@ -103,6 +112,10 @@ pub struct InspectResult {
 
 #[wasm_bindgen(js_name = "inspectFilepath")]
 pub fn inspect_filepath(path: &str) -> InspectResult {
+    inspect_path(path)
+}
+
+fn inspect_path(path: &str) -> InspectResult {
     let filename_inspector = FilenameInspector::new(path).analyze();
     let prefix_len = path.len() - filename_inspector.filename.len();
     let media_type = filename_inspector.media_type.to_string();
@@ -153,9 +166,47 @@ pub fn inspect_filepath(path: &str) -> InspectResult {
         })
     }));
 
+    // Rust string positions are UTF-8 byte offsets, while JavaScript string
+    // positions are UTF-16 code-unit offsets. Convert at the WASM boundary so
+    // browser consumers can safely use substring and DOM Range APIs.
+    for token in &mut tokens {
+        token.start = utf16_position(path, token.start);
+        token.end = utf16_position(path, token.end);
+    }
+
     InspectResult {
         tokens,
         metadata,
         media_type,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{InspectResult, TokenExcerpt, inspect_path};
+
+    fn token<'a>(result: &'a InspectResult, key: &str) -> &'a TokenExcerpt {
+        result
+            .tokens
+            .iter()
+            .find(|token| token.key == key)
+            .unwrap_or_else(|| panic!("missing {key} token"))
+    }
+
+    #[test]
+    fn returns_utf16_offsets_for_browser_strings() {
+        for (path, expected_year, expected_format) in [
+            ("Some movie (1991).mkv", (12, 16), (18, 21)),
+            ("Amélie (2001).mkv", (8, 12), (14, 17)),
+            ("Emoji 😀 (2009).mkv", (10, 14), (16, 19)),
+            ("Cinéma/Amélie (2001).mkv", (15, 19), (21, 24)),
+        ] {
+            let result = inspect_path(path);
+            let year = token(&result, "year");
+            let format = token(&result, "file_format");
+
+            assert_eq!((year.start, year.end), expected_year, "{path}");
+            assert_eq!((format.start, format.end), expected_format, "{path}");
+        }
     }
 }

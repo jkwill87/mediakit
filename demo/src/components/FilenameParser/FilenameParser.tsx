@@ -1,4 +1,4 @@
-import { use, useRef, useEffect, useCallback } from 'react'
+import { use, useRef, useEffect, useLayoutEffect, useCallback } from 'react'
 import init, { callOnce, inspectFilepath } from '@pkg/mediakit_wasm'
 import type { MetadataField } from '@pkg/mediakit_wasm'
 import wasmUrl from '../../../wasm/pkg/mediakit_wasm_bg.wasm' with { type: 'file' }
@@ -26,24 +26,24 @@ export default function FilenameParser({
     { raw: true }
   )
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const root = ref.current
     if (!root) return
     const cursorPos = getCurrentCursorPosition(root)
     const { tokens, metadata } = inspectFilepath(filename)
     onParse?.(metadata)
-    root.innerHTML = tokens
-      .map((token) => {
-        const label = filename.substring(token.start, token.end)
-        const tooltip =
-          token.status === 'matched'
-            ? ` data-tooltip="${token.key} = '${token.value}'"`
-            : ''
-        return `<span class="${token.status}"${tooltip}>${label}</span>`
-      })
-      .join('')
+    const spans = tokens.map((token) => {
+      const span = document.createElement('span')
+      span.className = token.status
+      span.textContent = filename.substring(token.start, token.end)
+      if (token.status === 'matched') {
+        span.dataset.tooltip = `${token.key} = '${token.value}'`
+      }
+      return span
+    })
+    root.replaceChildren(...spans)
     resetCursorPosition(cursorPos, root)
-  }, [filename])
+  }, [filename, onParse])
 
   useEffect(() => {
     if (externalFilename != null) {
@@ -71,15 +71,7 @@ export default function FilenameParser({
 
   const onInput = useCallback(
     (e: React.FormEvent<HTMLDivElement>) => {
-      const text = e.currentTarget.innerText.trim()
-      if (
-        text.length === 0 &&
-        (e.nativeEvent as InputEvent).inputType === 'deleteContentBackward'
-      ) {
-        e.preventDefault()
-        return
-      }
-      setFilename(text)
+      setFilename(e.currentTarget.textContent ?? '')
     },
     [setFilename]
   )
