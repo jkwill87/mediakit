@@ -11,20 +11,20 @@ Pinned tools are Rust 1.97.0, Bun 1.3.14, and `cargo:wasm-pack` 0.15.0.
 
 ## Commands
 
-| Goal                  | Command                                                              |
-| --------------------- | -------------------------------------------------------------------- |
-| Build the library     | `mise x -- cargo build`                                               |
-| Check all targets     | `mise run rust:check`                                                 |
-| Run Rust tests        | `mise test`                                                           |
-| Test all features     | `mise test --all-features`                                            |
-| Lint Rust             | `mise lint`                                                           |
-| Format Rust           | `mise x -- cargo fmt`                                                 |
-| Run benchmarks        | `mise run rust:bench`                                                 |
-| Build demo WASM       | `mise run demo:build`                                                 |
-| Run demo dev server   | `mise run demo:dev`                                                   |
-| Type-check demo       | `cd demo && mise x -- bun run check`                                  |
-| Build demo bundle     | `cd demo && mise x -- bun run build`                                  |
-| Run inspect example   | `mise x -- cargo run --example inspect-path -- path/to/file.mkv`      |
+| Goal                | Command                                                          |
+| ------------------- | ---------------------------------------------------------------- |
+| Build the library   | `mise x -- cargo build`                                          |
+| Check all targets   | `mise run rust:check`                                            |
+| Run Rust tests      | `mise test`                                                      |
+| Test all features   | `mise test --all-features`                                       |
+| Lint Rust           | `mise lint`                                                      |
+| Format Rust         | `mise x -- cargo fmt`                                            |
+| Run benchmarks      | `mise run rust:bench`                                            |
+| Build demo WASM     | `mise run demo:build`                                            |
+| Run demo dev server | `mise run demo:dev`                                              |
+| Type-check demo     | `cd demo && mise x -- bun run check`                             |
+| Build demo bundle   | `cd demo && mise x -- bun run build`                             |
+| Run inspect example | `mise x -- cargo run --example inspect-path -- path/to/file.mkv` |
 
 After changing `src/` or `demo/wasm`, rebuild the WASM package with `mise run demo:build` before
 relying on the browser demo.
@@ -46,6 +46,9 @@ relying on the browser demo.
   `src/inspect/inspectors/filename/`.
 - `probe` owns bounded, dependency-free container probing; `inspect::FileInspector` converts
   primary streams into tags.
+- `probe::FileProber` owns shared file state plus typed detected-container state and exposes the
+  public probing entrypoint. Built-in formats under `src/probe/containers/` own their detection and
+  probe functions; shared binary and Windows-media support lives under `src/probe/support/`.
 - Parsed metadata uses `meta::Tag` and typed fields under `src/meta/fields/`.
 - Regex matching uses the `regex-automata` Pike VM directly to keep WASM builds small.
 - The crate denies missing public docs, uses `thiserror` for typed errors, and forbids unsafe code.

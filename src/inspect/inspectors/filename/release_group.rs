@@ -44,8 +44,8 @@ impl FilenameInspector {
     /// Selects the release group for a movie or television series.
     ///
     /// **Preconditions:**
-    /// - Requires technical metadata to have been previously selected when the
-    ///   group appears immediately before a `sample` marker.
+    /// - Requires technical metadata to have been previously selected when the group appears
+    ///   immediately before a `sample` marker.
     pub(super) fn inspect_release_group(mut self) -> Self {
         let start_token_idx = match self.tokens.iter().rev().skip(2).position(|token| {
             matches!(token.ident, TokenIdentity::Delimiter) && token.template(&self.filename) == "-"

@@ -1,34 +1,7 @@
-//! Bounded, metadata-only parsers for supported container families.
-//!
-//! Each parser reads only the structural metadata needed to populate a
-//! [`MediaInfo`](super::MediaInfo): container headers, stream descriptions,
-//! and timing tables. Media payloads are never decoded. File offsets and
-//! lengths are checked before reads, and individual metadata allocations are
-//! capped by [`binary::MAX_METADATA_BYTES`].
-//!
-//! Container modules keep their byte-order and framing rules local. The
-//! helpers in this module normalize identifiers shared by several families,
-//! including FourCC codec codes, WAVE format tags, channel masks, codec
-//! profiles, and display-resolution classes.
+//! Normalizes media identifiers and technical fields shared by container families.
 
-mod asf;
-mod avi;
-mod binary;
-mod matroska;
-mod mp4;
-mod mpeg_ts;
-
-pub(super) use asf::parse as parse_asf;
-pub(super) use avi::parse as parse_avi;
-pub(super) use matroska::parse as parse_matroska;
-pub(super) use mp4::parse as parse_mp4;
-pub(super) use mpeg_ts::{matches as matches_mpeg_ts, parse as parse_mpeg_ts};
-
-use super::MediaInfo as Probe;
+use super::FOURCC_BYTES;
 use crate::meta::fields::{AudioCodec, AudioLayout, VideoCodec, VideoProfile, VideoResolution};
-
-/// `WAVEFORMATEXTENSIBLE` format tag used by ASF and AVI audio headers.
-pub(super) const WAVE_FORMAT_EXTENSIBLE: u16 = 0xFFFE;
 
 /// Windows speaker-mask bit for the low-frequency-effects channel.
 const SPEAKER_LOW_FREQUENCY: u32 = 0x0000_0008;
@@ -70,33 +43,6 @@ const SD_360_WIDTH: u64 = 640;
 /// Nominal height used as the 360-line SD boundary.
 const SD_360_HEIGHT: u64 = 360;
 
-/// Microsoft PCM `WAVEFORMATEX` tag.
-const WAVE_FORMAT_PCM: u16 = 0x0001;
-/// Microsoft IEEE floating-point `WAVEFORMATEX` tag.
-const WAVE_FORMAT_IEEE_FLOAT: u16 = 0x0003;
-/// Microsoft MPEG Layer-3 `WAVEFORMATEX` tag.
-const WAVE_FORMAT_MPEGLAYER3: u16 = 0x0055;
-/// Generic AAC `WAVEFORMATEX` tag.
-const WAVE_FORMAT_AAC: u16 = 0x00FF;
-/// Nokia MPEG ADTS AAC `WAVEFORMATEX` tag.
-const WAVE_FORMAT_NOKIA_MPEG_ADTS_AAC: u16 = 0x1600;
-/// Vodafone MPEG ADTS AAC `WAVEFORMATEX` tag.
-const WAVE_FORMAT_VODAFONE_MPEG_ADTS_AAC: u16 = 0x1602;
-/// Windows Media Audio Standard `WAVEFORMATEX` tag.
-const WAVE_FORMAT_WMAUDIO2: u16 = 0x0161;
-/// Windows Media Audio Professional `WAVEFORMATEX` tag.
-const WAVE_FORMAT_WMAUDIO3: u16 = 0x0162;
-/// Windows Media Audio Lossless `WAVEFORMATEX` tag.
-const WAVE_FORMAT_WMAUDIO_LOSSLESS: u16 = 0x0163;
-/// Common AC-3 `WAVEFORMATEX` tag used by multimedia containers.
-const WAVE_FORMAT_AC3: u16 = 0x2000;
-/// Common DTS `WAVEFORMATEX` tag used by multimedia containers.
-const WAVE_FORMAT_DTS: u16 = 0x2001;
-/// FLAC `WAVEFORMATEX` tag.
-const WAVE_FORMAT_FLAC: u16 = 0xF1AC;
-/// Opus `WAVEFORMATEX` tag.
-const WAVE_FORMAT_OPUS: u16 = 0x704F;
-
 /// H.264 Baseline `profile_idc`.
 const AVC_PROFILE_BASELINE: u8 = 66;
 /// H.264 Main `profile_idc`.
@@ -118,7 +64,7 @@ const HEVC_PROFILE_MAIN_10: u8 = 2;
 /// Bit depth above which an HEVC stream is treated as Main 10.
 const HEVC_MAIN_10_MIN_BIT_DEPTH: u8 = 8;
 
-fn fourcc_string(value: &[u8; 4]) -> Option<String> {
+pub(in crate::probe) fn fourcc_string(value: &[u8; FOURCC_BYTES]) -> Option<String> {
     let value = std::str::from_utf8(value)
         .ok()?
         .trim_matches(char::from(0))
@@ -126,14 +72,17 @@ fn fourcc_string(value: &[u8; 4]) -> Option<String> {
     (!value.is_empty()).then(|| value.to_owned())
 }
 
-/// Converts a channel count and optional Windows speaker mask into the
-/// library's `full.sub.height` representation.
+/// Converts a channel count and optional Windows speaker mask into the library's `full.sub.height`
+/// representation.
 ///
-/// When a `WAVEFORMATEXTENSIBLE` mask is available, bit `0x8` identifies the
-/// low-frequency-effects channel and the selected upper-speaker bits identify
-/// height channels. Without a mask, conventional 5.1 and 7.1 layouts are
-/// inferred from the channel count; other counts are treated as full-range.
-fn audio_layout(channels: u64, channel_mask: Option<u32>) -> Option<AudioLayout> {
+/// When a `WAVEFORMATEXTENSIBLE` mask is available, bit `0x8` identifies the low-frequency-effects
+/// channel and the selected upper-speaker bits identify height channels. Without a mask,
+/// conventional 5.1 and 7.1 layouts are inferred from the channel count; other counts are treated
+/// as full-range.
+pub(in crate::probe) fn audio_layout(
+    channels: u64,
+    channel_mask: Option<u32>,
+) -> Option<AudioLayout> {
     let channels = u8::try_from(channels).ok().filter(|value| *value > 0)?;
     if let Some(mask) = channel_mask {
         let sub = u8::from(mask & SPEAKER_LOW_FREQUENCY != 0);
@@ -163,12 +112,15 @@ fn audio_layout(channels: u64, channel_mask: Option<u32>) -> Option<AudioLayout>
     })
 }
 
-/// Classifies stored pixel dimensions using the nominal raster boundary for
-/// each resolution tier.
+/// Classifies stored pixel dimensions using the nominal raster boundary for each resolution tier.
 ///
-/// Either dimension may establish the tier because anamorphic and cropped
-/// encodes do not always retain the corresponding standard width and height.
-fn video_resolution(width: u64, height: u64, interlaced: Option<bool>) -> Option<VideoResolution> {
+/// Either dimension may establish the tier because anamorphic and cropped encodes do not always
+/// retain the corresponding standard width and height.
+pub(in crate::probe) fn video_resolution(
+    width: u64,
+    height: u64,
+    interlaced: Option<bool>,
+) -> Option<VideoResolution> {
     let interlaced = interlaced.unwrap_or(false);
     if width >= UHD_8K_WIDTH || height >= UHD_8K_HEIGHT {
         return Some(VideoResolution::Uhd8k);
@@ -207,9 +159,13 @@ fn video_resolution(width: u64, height: u64, interlaced: Option<bool>) -> Option
     None
 }
 
-/// Maps common ISO-BMFF, QuickTime, AVI, and ASF FourCC aliases to a video
-/// codec.
-fn video_codec(fourcc: &[u8; 4]) -> Option<VideoCodec> {
+/// Converts a nonzero pixel dimension to the public 32-bit representation.
+pub(in crate::probe) fn pixel_dimension(value: u64) -> Option<u32> {
+    u32::try_from(value).ok().filter(|value| *value > 0)
+}
+
+/// Maps common ISO-BMFF, QuickTime, AVI, and ASF FourCC aliases to a video codec.
+pub(in crate::probe) fn video_codec(fourcc: &[u8; FOURCC_BYTES]) -> Option<VideoCodec> {
     let upper = fourcc.map(|value| value.to_ascii_uppercase());
     match &upper {
         b"AV01" => Some(VideoCodec::Av1),
@@ -225,7 +181,7 @@ fn video_codec(fourcc: &[u8; 4]) -> Option<VideoCodec> {
 }
 
 /// Maps ISO-BMFF and QuickTime audio sample-entry FourCC values to a codec.
-const fn audio_codec(fourcc: &[u8; 4]) -> Option<AudioCodec> {
+pub(in crate::probe) const fn audio_codec(fourcc: &[u8; FOURCC_BYTES]) -> Option<AudioCodec> {
     match fourcc {
         b"mp4a" | b"MP4A" => Some(AudioCodec::Aac),
         b"ac-3" | b"AC-3" => Some(AudioCodec::DolbyDigital),
@@ -244,31 +200,8 @@ const fn audio_codec(fourcc: &[u8; 4]) -> Option<AudioCodec> {
     }
 }
 
-/// Maps `WAVEFORMATEX.wFormatTag` values to a codec.
-///
-/// The hexadecimal values are the registrations from Microsoft's multimedia
-/// format-tag registry. `0xFFFE` (`WAVE_FORMAT_EXTENSIBLE`) is resolved by the
-/// ASF and AVI parsers before this function is called.
-const fn wave_audio_codec(format_tag: u16) -> Option<AudioCodec> {
-    match format_tag {
-        WAVE_FORMAT_PCM | WAVE_FORMAT_IEEE_FLOAT => Some(AudioCodec::Pcm),
-        WAVE_FORMAT_MPEGLAYER3 => Some(AudioCodec::Mp3),
-        WAVE_FORMAT_AAC
-        | WAVE_FORMAT_NOKIA_MPEG_ADTS_AAC
-        | WAVE_FORMAT_VODAFONE_MPEG_ADTS_AAC => Some(AudioCodec::Aac),
-        WAVE_FORMAT_WMAUDIO2 | WAVE_FORMAT_WMAUDIO3 | WAVE_FORMAT_WMAUDIO_LOSSLESS => {
-            Some(AudioCodec::DolbyDigitalPlus)
-        }
-        WAVE_FORMAT_AC3 => Some(AudioCodec::DolbyDigital),
-        WAVE_FORMAT_DTS => Some(AudioCodec::Dts),
-        WAVE_FORMAT_FLAC => Some(AudioCodec::Flac),
-        WAVE_FORMAT_OPUS => Some(AudioCodec::Opus),
-        _ => None,
-    }
-}
-
 /// Maps H.264 `profile_idc` values from an AVC decoder configuration record.
-const fn avc_profile(profile: u8) -> Option<VideoProfile> {
+pub(in crate::probe) const fn avc_profile(profile: u8) -> Option<VideoProfile> {
     match profile {
         AVC_PROFILE_BASELINE => Some(VideoProfile::Baseline),
         AVC_PROFILE_MAIN => Some(VideoProfile::Main),
@@ -283,10 +216,9 @@ const fn avc_profile(profile: u8) -> Option<VideoProfile> {
 
 /// Maps the HEVC general profile space used by decoder configuration records.
 ///
-/// Main 10 is also inferred when the signalled luma bit depth exceeds eight,
-/// which covers files whose profile field is incomplete but whose bit-depth
-/// constraint is usable.
-fn hevc_profile(profile: u8, bit_depth: Option<u8>) -> Option<VideoProfile> {
+/// Main 10 is also inferred when the signalled luma bit depth exceeds eight, which covers files
+/// whose profile field is incomplete but whose bit-depth constraint is usable.
+pub(in crate::probe) fn hevc_profile(profile: u8, bit_depth: Option<u8>) -> Option<VideoProfile> {
     if profile == HEVC_PROFILE_MAIN_10
         || bit_depth.is_some_and(|depth| depth > HEVC_MAIN_10_MIN_BIT_DEPTH)
     {

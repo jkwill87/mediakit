@@ -24,7 +24,7 @@ fn main() -> ExitCode {
     let inspector = FilenameInspector::new(&path).analyze();
 
     println!("path: {}", path.display());
-    println!("media_type: {}", inspector.media_type);
+    println!("media_type: {}", inspector.media_type());
     for tag in inspector.tags() {
         println!("{}: {}", tag.key(), tag.value());
     }

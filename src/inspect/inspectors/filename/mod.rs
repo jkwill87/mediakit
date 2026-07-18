@@ -56,14 +56,10 @@ const EOL: &str = r"(?:$|[._ -])";
 /// - [`Tag::VideoResolution`]
 pub struct FilenameInspector {
     path: PathBuf,
-    /// The path string that was parsed.
-    pub filename: String,
-    /// Tokens parsed from the path string.
-    pub tokens: Vec<Token>,
-    /// The detected media type.
-    pub media_type: MediaType,
-    /// Structured file-format and external-track metadata.
-    pub metadata: FilenameMetadata,
+    filename: String,
+    tokens: Vec<Token>,
+    media_type: MediaType,
+    metadata: FilenameMetadata,
     media_type_hint: Option<MediaType>,
 }
 
@@ -121,11 +117,31 @@ impl FilenameInspector {
         }
     }
 
+    /// Returns the path string that was parsed.
+    pub fn filename(&self) -> &str {
+        &self.filename
+    }
+
+    /// Returns the tokens parsed from the path string.
+    pub fn tokens(&self) -> &[Token] {
+        &self.tokens
+    }
+
+    /// Returns the detected media type.
+    pub const fn media_type(&self) -> &MediaType {
+        &self.media_type
+    }
+
+    /// Returns structured file-format and external-track metadata.
+    pub const fn metadata(&self) -> &FilenameMetadata {
+        &self.metadata
+    }
+
     /// Supplies an explicit media type hint for ambiguous filenames.
     ///
-    /// A movie or television hint overrides automatic media-type detection while
-    /// leaving the rest of the inspection pipeline unchanged. Passing
-    /// [`MediaType::Unknown`] restores automatic detection.
+    /// A movie or television hint overrides automatic media-type detection while leaving the rest
+    /// of the inspection pipeline unchanged. Passing [`MediaType::Unknown`] restores automatic
+    /// detection.
     pub fn with_media_type_hint(mut self, media_type: MediaType) -> Self {
         self.media_type_hint = (media_type != MediaType::Unknown).then_some(media_type);
         self

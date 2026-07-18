@@ -24,12 +24,12 @@ impl FilenameMetadata {
         self.generic_identity
     }
 
-    pub(crate) fn set_format(&mut self, format: MediaFormat, identity_stem: Option<String>) {
+    pub(super) fn set_format(&mut self, format: MediaFormat, identity_stem: Option<String>) {
         self.format = Some(format);
         self.identity_stem = identity_stem;
     }
 
-    pub(crate) fn set_external_track(
+    pub(super) fn set_external_track(
         &mut self,
         track: TrackMetadata,
         identity_stem: Option<String>,

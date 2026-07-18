@@ -1,5 +1,6 @@
 //! Defines failures produced while probing media containers.
 
+use crate::meta::fields::MediaFormat;
 use std::io;
 use thiserror::Error;
 
@@ -14,8 +15,8 @@ pub enum ProbeError {
     /// The file identifies as a supported format but contains malformed data.
     #[error("invalid {format} data: {message}")]
     InvalidData {
-        /// The detected container family.
-        format: &'static str,
+        /// The detected or representative media format.
+        format: MediaFormat,
         /// A description of the malformed data.
         message: String,
     },
@@ -26,7 +27,7 @@ pub enum ProbeError {
 }
 
 impl ProbeError {
-    pub(crate) fn from_parser(format: &'static str, error: io::Error) -> Self {
+    pub(super) fn from_probe(format: MediaFormat, error: io::Error) -> Self {
         if matches!(
             error.kind(),
             io::ErrorKind::InvalidData | io::ErrorKind::UnexpectedEof

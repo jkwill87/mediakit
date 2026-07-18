@@ -60,9 +60,8 @@ fn push_delimiter(tokens: &mut Vec<Token>, start: usize, end: usize) {
 impl FilenameInspector {
     /// Selects a standalone premiere year from the parsed title span.
     ///
-    /// Text following the year is retained as an alternate title, which covers
-    /// common edition and secondary-title filename forms without discarding its
-    /// source span.
+    /// Text following the year is retained as an alternate title, which covers common edition and
+    /// secondary-title filename forms without discarding its source span.
     ///
     /// **Preconditions:**
     /// - Requires the title to have been previously selected.

@@ -1,4 +1,4 @@
-//! Verifies bounded Matroska and WebM container parsing.
+//! Verifies bounded Matroska detection and probing.
 
 use super::*;
 
@@ -44,10 +44,10 @@ fn retains_embedded_subtitle_codec_ids_and_flags() {
     };
     let stream = subtitle_stream(&track);
 
-    assert!(!stream.is_enabled);
-    assert!(stream.is_default);
+    assert!(!stream.info.is_enabled);
+    assert!(stream.info.is_default);
     assert_eq!(
-        stream.language.map(|language| language.iso_639_1),
+        stream.info.language.map(|language| language.iso_639_1),
         Some("en")
     );
     assert_eq!(stream.codec.as_deref(), Some("S_TEXT/ASS"));

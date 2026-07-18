@@ -7,14 +7,14 @@ use crate::meta::fields::Language;
 impl FilenameInspector {
     /// Selects encoded audio-language and subtitle-language markers.
     ///
-    /// External-track language suffixes are handled by the track-suffix
-    /// inspector. Audio languages are recognized after a structural or
-    /// technical metadata marker, which avoids treating ordinary title words
-    /// as language codes.
+    /// External-track language suffixes are handled by the track-suffix inspector. Audio languages
+    /// are recognized after a structural or technical metadata marker, which avoids treating
+    /// ordinary title words as language codes.
     ///
     /// **Preconditions:**
     /// - Requires the file format and external-track suffixes to have been inspected.
-    /// - Requires structural and technical metadata to have been previously selected for audio languages.
+    /// - Requires structural and technical metadata to have been previously selected for audio
+    ///   languages.
     pub(super) fn inspect_audio_language(mut self) -> Self {
         if self
             .metadata

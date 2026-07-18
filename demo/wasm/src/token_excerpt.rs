@@ -12,11 +12,11 @@ pub struct TokenExcerpt {
     value: Option<String>,
 }
 
-impl TryFrom<Token> for TokenExcerpt {
+impl TryFrom<&Token> for TokenExcerpt {
     type Error = ();
 
-    fn try_from(token: Token) -> Result<Self, Self::Error> {
-        let (key, value) = if let Some(tag) = token.tag {
+    fn try_from(token: &Token) -> Result<Self, Self::Error> {
+        let (key, value) = if let Some(tag) = token.tag.as_ref() {
             (tag.key(), Some(tag.value()))
         } else {
             (token.ident.as_str(), None)

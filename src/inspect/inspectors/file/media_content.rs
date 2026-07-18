@@ -1,16 +1,18 @@
 //! Probes media containers for stream metadata tags.
 
 use super::FileInspector;
-use crate::inspect::utils::parse_mime_type;
 use crate::meta::Tag;
-use crate::probe::{AudioStream, MediaInfo, VideoStream, probe};
+use crate::probe::{AudioStream, FileProber, MediaInfo, VideoStream};
 
 impl FileInspector {
     pub(super) fn inspect_media_content(mut self) -> Self {
         if !self.inspect_content {
             return self;
         }
-        let Ok(media) = probe(&self.path) else {
+        let Ok(prober) = FileProber::new(&self.path) else {
+            return self;
+        };
+        let Ok(media) = prober.probe() else {
             return self;
         };
 
@@ -24,10 +26,10 @@ impl FileInspector {
 }
 
 fn probe_tags(media: &MediaInfo) -> Vec<Tag> {
-    let mut tags = vec![Tag::Container(media.container.clone())];
-    if let Some(mime_type) = parse_mime_type(&media.container) {
-        tags.push(Tag::MimeType(mime_type.to_owned()));
-    }
+    let mut tags = vec![
+        Tag::Container(media.container),
+        Tag::MimeType(media.container.mime_type().to_owned()),
+    ];
     if let Some(duration) = media.duration {
         tags.push(Tag::Runtime(duration.as_secs()));
     }

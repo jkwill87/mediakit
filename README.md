@@ -23,7 +23,19 @@ for tag in inspector.tags() {
 
 `FilenameInspector` parses filename metadata. `FileInspector` adds size, format, MIME, and bounded
 header probing for Matroska/WebM, ISO-BMFF/QuickTime, AVI, MPEG-TS/M2TS, and ASF/WMV. The public
-`mediakit::probe` API exposes ordered video, audio, and embedded subtitle streams with typed errors.
+`mediakit::probe` API exposes ordered video, audio, and embedded subtitle streams with typed errors:
+
+```rust
+use mediakit::probe::FileProber;
+
+let media = FileProber::new("movie.mkv").unwrap().probe().unwrap();
+println!("container: {}", media.container);
+```
+
+Probe results report the exact content-derived `MediaFormat` in `MediaInfo::container` and group
+enabled/default/language data for every stream under its shared `StreamInfo`. Preferred audio,
+video, and subtitle streams are available through the corresponding
+`MediaInfo::primary_*_stream` methods.
 
 ## Feature flags
 

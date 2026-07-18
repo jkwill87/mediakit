@@ -1,8 +1,10 @@
 //! Verifies file-property and container-content inspection.
 
 use super::*;
-use crate::meta::fields::{AudioCodec, VideoCodec, VideoProfile, VideoResolution};
-use crate::probe::probe;
+use crate::meta::fields::{
+    AudioCodec, MediaFormat, VideoCodec, VideoProfile, VideoResolution,
+};
+use crate::probe::FileProber;
 use std::fs;
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -117,8 +119,9 @@ fn mp4_track(handler: &[u8; 4], codec: &[u8; 4], enabled: bool) -> Vec<u8> {
     mp4_box(b"trak", &trak)
 }
 
-fn mp4_fixture() -> Vec<u8> {
-    let mut ftyp = b"isom\0\0\0\0mp42".to_vec();
+fn iso_bmff_fixture(brand: &[u8; 4]) -> Vec<u8> {
+    let mut ftyp = brand.to_vec();
+    ftyp.extend_from_slice(b"\0\0\0\0mp42");
     ftyp = mp4_box(b"ftyp", &ftyp);
     let mut moov = mp4_box(b"mvhd", &mp4_header(1000, 10_000));
     moov.extend_from_slice(&mp4_track(b"vide", b"avc1", false));
@@ -128,6 +131,10 @@ fn mp4_fixture() -> Vec<u8> {
     moov.extend_from_slice(&mp4_track(b"subt", b"tx3g", true));
     ftyp.extend_from_slice(&mp4_box(b"moov", &moov));
     ftyp
+}
+
+fn mp4_fixture() -> Vec<u8> {
+    iso_bmff_fixture(b"isom")
 }
 
 fn ebml_size(size: usize) -> Vec<u8> {
@@ -179,8 +186,11 @@ fn matroska_track(
     ebml(&[0xAE], &track)
 }
 
-fn matroska_fixture() -> Vec<u8> {
-    let header = ebml(&[0x1A, 0x45, 0xDF, 0xA3], &ebml(&[0x42, 0x82], b"webm"));
+fn matroska_fixture_with_doc_type(doc_type: &[u8]) -> Vec<u8> {
+    let header = ebml(
+        &[0x1A, 0x45, 0xDF, 0xA3],
+        &ebml(&[0x42, 0x82], doc_type),
+    );
     let mut info = ebml_uint(&[0x2A, 0xD7, 0xB1], 1_000_000);
     info.extend_from_slice(&ebml(&[0x44, 0x89], &10_f64.to_be_bytes()));
     let info = ebml(&[0x15, 0x49, 0xA9, 0x66], &info);
@@ -201,6 +211,10 @@ fn matroska_fixture() -> Vec<u8> {
     let mut output = header;
     output.extend_from_slice(&ebml(&[0x18, 0x53, 0x80, 0x67], &segment));
     output
+}
+
+fn matroska_fixture() -> Vec<u8> {
+    matroska_fixture_with_doc_type(b"webm")
 }
 
 fn riff_chunk(kind: &[u8; 4], payload: &[u8]) -> Vec<u8> {
@@ -354,8 +368,33 @@ fn ts_fixture() -> Vec<u8> {
     output
 }
 
+fn m2ts_fixture() -> Vec<u8> {
+    ts_fixture()
+        .chunks_exact(188)
+        .flat_map(|packet| [0; 4].into_iter().chain(packet.iter().copied()))
+        .collect()
+}
+
 #[test]
-fn public_probe_enumerates_streams_for_every_supported_container() {
+fn file_prober_reports_exact_format_for_every_container_subtype() {
+    for (extension, data, expected) in [
+        ("mkv", matroska_fixture_with_doc_type(b"matroska"), MediaFormat::Mkv),
+        ("webm", matroska_fixture(), MediaFormat::Webm),
+        ("mp4", mp4_fixture(), MediaFormat::Mp4),
+        ("mov", iso_bmff_fixture(b"qt  "), MediaFormat::Mov),
+        ("ts", ts_fixture(), MediaFormat::Ts),
+        ("m2ts", m2ts_fixture(), MediaFormat::M2ts),
+        ("avi", avi_fixture(), MediaFormat::Avi),
+        ("wmv", asf_fixture(), MediaFormat::Wmv),
+    ] {
+        let fixture = Fixture::new(extension, &data);
+        let media = FileProber::new(&fixture.path).unwrap().probe().unwrap();
+        assert_eq!(media.container, expected, "{extension}");
+    }
+}
+
+#[test]
+fn file_prober_enumerates_streams_for_every_supported_container() {
     for (extension, data, subtitle_codec, subtitle_language) in [
         ("mp4", mp4_fixture(), Some("tx3g"), Some("en")),
         (
@@ -369,7 +408,7 @@ fn public_probe_enumerates_streams_for_every_supported_container() {
         ("ts", ts_fixture(), Some("pgs"), None),
     ] {
         let fixture = Fixture::new(extension, &data);
-        let info = probe(&fixture.path).unwrap();
+        let info = FileProber::new(&fixture.path).unwrap().probe().unwrap();
         assert_eq!(info.video_streams.len(), 2, "{extension}");
         assert_eq!(info.audio_streams.len(), 2, "{extension}");
         assert_eq!(
@@ -382,7 +421,7 @@ fn public_probe_enumerates_streams_for_every_supported_container() {
         assert_eq!(
             info.subtitle_streams
                 .first()
-                .and_then(|stream| stream.language)
+                .and_then(|stream| stream.info.language)
                 .map(|language| language.iso_639_1),
             subtitle_language,
             "{extension}"
@@ -395,8 +434,12 @@ fn content_probe_overrides_misleading_extension_and_extracts_mp4_tracks() {
     let inspector = inspect("mkv", &mp4_fixture());
     assert!(has_tag(
         &inspector,
-        |tag| matches!(tag, Tag::Container(value) if value == "mp4")
+        |tag| matches!(tag, Tag::Container(MediaFormat::Mp4))
     ));
+    assert!(has_tag(&inspector, |tag| matches!(
+        tag,
+        Tag::MimeType(value) if value == MediaFormat::Mp4.mime_type()
+    )));
     assert!(has_tag(&inspector, |tag| matches!(
         tag,
         Tag::AudioCodec(AudioCodec::DolbyDigitalPlus)
@@ -421,28 +464,28 @@ fn parses_matroska_avi_transport_stream_and_asf_headers() {
         (
             "mkv",
             matroska_fixture(),
-            "webm",
+            MediaFormat::Webm,
             VideoCodec::Vp9,
             AudioCodec::Opus,
         ),
         (
             "avi",
             avi_fixture(),
-            "avi",
+            MediaFormat::Avi,
             VideoCodec::H264,
             AudioCodec::DolbyDigital,
         ),
         (
             "ts",
             ts_fixture(),
-            "ts",
+            MediaFormat::Ts,
             VideoCodec::H265,
             AudioCodec::DolbyDigitalPlus,
         ),
         (
             "wmv",
             asf_fixture(),
-            "wmv",
+            MediaFormat::Wmv,
             VideoCodec::Vc1,
             AudioCodec::DolbyDigital,
         ),
@@ -451,7 +494,7 @@ fn parses_matroska_avi_transport_stream_and_asf_headers() {
         assert!(
             has_tag(
                 &inspector,
-                |tag| matches!(tag, Tag::Container(value) if value == container)
+                |tag| matches!(tag, Tag::Container(value) if *value == container)
             ),
             "{extension}"
         );

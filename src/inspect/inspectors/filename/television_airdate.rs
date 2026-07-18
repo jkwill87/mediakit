@@ -14,8 +14,8 @@ impl FilenameInspector {
     /// - None
     pub(super) fn inspect_television_air_date(self) -> Self {
         const WINDOW_SIZE: usize = 5;
-        // An explicit movie hint prevents date-shaped movie titles from being
-        // interpreted as television air dates.
+        // An explicit movie hint prevents date-shaped movie titles from being interpreted as
+        // television air dates.
         if self.media_type_hint == Some(MediaType::Movie) {
             return self;
         }

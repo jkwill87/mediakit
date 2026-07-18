@@ -1,24 +1,28 @@
-//! Parses Matroska and WebM metadata from their EBML element trees.
+//! Detects Matroska containers and probes metadata from their EBML element trees.
 //!
-//! EBML encodes every element as a variable-width element ID, a variable-width
-//! payload size, and the payload itself. Matroska's top-level `Segment` can be
-//! unknown-sized for streaming, so file-level traversal is seek-based while
-//! bounded child payloads are traversed as slices. Only the EBML header,
-//! `Info`, and `Tracks` metadata are read; `Cluster` media payloads are skipped.
+//! EBML encodes every element as a variable-width element ID, a variable-width payload size, and
+//! the payload itself. Matroska's top-level `Segment` can be unknown-sized for streaming, so
+//! file-level traversal is seek-based while bounded child payloads are traversed as slices. Only
+//! the EBML header, `Info`, and `Tracks` metadata are read; `Cluster` media payloads are skipped.
 //!
-//! Element-ID constants retain the VINT marker bit and are written as the
-//! big-endian hexadecimal IDs from the Matroska element registry.
+//! Element-ID constants retain the VINT marker bit and are written as the big-endian hexadecimal
+//! IDs from the Matroska element registry.
 
 use super::binary::{checked_end, invalid, read_region};
-use super::{Probe, audio_layout, avc_profile, hevc_profile, video_resolution};
-use crate::meta::fields::{AudioCodec, AudioProfile, Language, VideoCodec};
-use crate::probe::{AudioStream, SubtitleStream, VideoStream};
+use super::{
+    MediaInfo, ProbeInput, audio_layout, avc_profile, hevc_profile, pixel_dimension,
+    video_resolution,
+};
+use crate::meta::fields::{AudioCodec, AudioProfile, Language, MediaFormat, VideoCodec};
+use crate::probe::{AudioStream, ProbeError, StreamInfo, SubtitleStream, VideoStream};
 use std::fs::File;
 use std::io::{self, Read, Seek, SeekFrom};
 use std::time::Duration;
 
 /// EBML header master element (`0x1A45DFA3`).
 const EBML: u64 = 0x1A45_DFA3;
+/// On-disk Matroska EBML signature.
+const EBML_SIGNATURE: [u8; 4] = [0x1A, 0x45, 0xDF, 0xA3];
 /// EBML header `DocType` string (`0x4282`), normally `matroska` or `webm`.
 const DOC_TYPE: u64 = 0x4282;
 /// Matroska `Segment` master element (`0x18538067`).
@@ -62,6 +66,43 @@ const FLAG_INTERLACED: u64 = 0x9A;
 /// Audio channel count (`0x9F`), whose schema default is one channel.
 const CHANNELS: u64 = 0x9F;
 
+/// Matroska TrackType value for video.
+const TRACK_TYPE_VIDEO: u64 = 1;
+/// Matroska TrackType value for audio.
+const TRACK_TYPE_AUDIO: u64 = 2;
+/// Matroska TrackType value for subtitles.
+const TRACK_TYPE_SUBTITLE: u64 = 17;
+/// Default `TimestampScale` in nanoseconds per Segment Tick.
+const DEFAULT_TIMESTAMP_SCALE_NANOSECONDS: u64 = 1_000_000;
+/// Nanoseconds in one second for duration and frame-rate conversion.
+const NANOSECONDS_PER_SECOND: f64 = 1_000_000_000.0;
+/// Profile byte offset shared by AVC and HEVC decoder configuration records.
+const DECODER_CONFIG_PROFILE_OFFSET: usize = 1;
+/// Mask selecting `general_profile_idc` from an HEVC configuration record.
+const HEVC_PROFILE_IDC_MASK: u8 = 0x1F;
+/// `bitDepthLumaMinus8` byte offset in an HEVC configuration record.
+const HEVC_BIT_DEPTH_OFFSET: usize = 17;
+/// Base luma bit depth added to `bitDepthLumaMinus8`.
+const HEVC_BASE_BIT_DEPTH: u8 = 8;
+/// Mask selecting `bitDepthLumaMinus8` from its configuration byte.
+const HEVC_BIT_DEPTH_MASK: u8 = 0x07;
+/// Matroska `FlagInterlaced` value for interlaced video.
+const INTERLACING_INTERLACED: u64 = 1;
+/// Matroska `FlagInterlaced` value for progressive video.
+const INTERLACING_PROGRESSIVE: u64 = 2;
+/// Encoded width of the first byte read to determine a VINT's length.
+const VINT_PREFIX_BYTES: usize = 1;
+/// Maximum VINT and EBML unsigned-integer width supported by this probe.
+const MAX_EBML_INTEGER_BYTES: usize = 8;
+/// High bit from which an EBML VINT width marker is shifted.
+const VINT_MARKER_HIGH_BIT: u8 = 0x80;
+/// All-ones byte used by EBML's unknown-size VINT sentinel.
+const VINT_UNKNOWN_DATA_BYTE: u8 = 0xFF;
+/// Encoded byte width of an EBML single-precision float.
+const EBML_FLOAT32_BYTES: usize = 4;
+/// Encoded byte width of an EBML double-precision float.
+const EBML_FLOAT64_BYTES: usize = 8;
+
 /// A fully bounded EBML element borrowed from its parent's payload.
 #[derive(Clone, Copy)]
 struct Element<'a> {
@@ -89,8 +130,8 @@ impl<'a> Iterator for Elements<'a> {
             return None;
         }
         let start = self.offset;
-        // IDs and sizes share the VINT framing, but the ID retains its marker
-        // bit while the size uses only the VINT data bits.
+        // IDs and sizes share the VINT framing, but the ID retains its marker bit while the size
+        // uses only the VINT data bits.
         let (id, id_len) = match read_vint(&self.data[start..], true) {
             Ok(Some(value)) => value,
             Ok(None) => return Some(Err(invalid("unknown EBML element ID"))),
@@ -100,9 +141,9 @@ impl<'a> Iterator for Elements<'a> {
         let (size, size_len) = match read_vint(&self.data[size_start..], false) {
             Ok(Some(value)) => value,
             Ok(None) => {
-                // An all-ones size denotes an unknown-sized master element.
-                // Within a bounded parent, the remaining bytes are its extent.
-                let payload_start = size_start + 1;
+                // An all-ones size denotes an unknown-sized master element. Within a bounded
+                // parent, the remaining bytes are its extent.
+                let payload_start = size_start + VINT_PREFIX_BYTES;
                 self.offset = self.data.len();
                 return Some(Ok(Element {
                     id,
@@ -165,8 +206,22 @@ impl Default for Track {
     }
 }
 
-pub fn parse(file: &mut File, file_len: u64) -> io::Result<Probe> {
-    file.seek(SeekFrom::Start(0))?;
+/// Detects the Matroska EBML signature.
+pub(in crate::probe) fn matches(prefix: &[u8]) -> bool {
+    prefix.starts_with(&EBML_SIGNATURE)
+}
+
+/// Probes a detected Matroska container.
+pub(in crate::probe) fn probe(input: &mut ProbeInput) -> Result<MediaInfo, ProbeError> {
+    let file_len = input.len();
+    let (ebml_end, format) = probe_header(input.file(), file_len)
+        .map_err(|error| ProbeError::from_probe(MediaFormat::Mkv, error))?;
+    probe_segment(input.file(), file_len, ebml_end, format)
+        .map_err(|error| ProbeError::from_probe(format, error))
+}
+
+/// Reads the EBML header and resolves the exact Matroska-derived format.
+fn probe_header(file: &mut File, file_len: u64) -> io::Result<(u64, MediaFormat)> {
     let ebml = read_file_element(file, file_len)?;
     if ebml.id != EBML {
         return Err(invalid("Matroska EBML header missing"));
@@ -179,21 +234,35 @@ pub fn parse(file: &mut File, file_len: u64) -> io::Result<Probe> {
             doc_type = std::str::from_utf8(element.payload).ok();
         }
     }
+    let format = if doc_type == Some("webm") {
+        MediaFormat::Webm
+    } else {
+        MediaFormat::Mkv
+    };
+    Ok((ebml.end, format))
+}
 
-    file.seek(SeekFrom::Start(ebml.end))?;
+/// Reads the segment metadata after the exact format has been resolved.
+fn probe_segment(
+    file: &mut File,
+    file_len: u64,
+    ebml_end: u64,
+    format: MediaFormat,
+) -> io::Result<MediaInfo> {
+    file.seek(SeekFrom::Start(ebml_end))?;
     let segment = read_file_element(file, file_len)?;
     if segment.id != SEGMENT {
         return Err(invalid("Matroska segment missing"));
     }
-    // A streaming Matroska Segment may use EBML's unknown-size sentinel. At
-    // the file level its effective bound is the physical end of the file.
+    // A streaming Matroska Segment may use EBML's unknown-size sentinel. At the file level its
+    // effective bound is the physical end of the file.
     let segment_end = if segment.size_unknown {
         file_len
     } else {
         segment.end
     };
     // TimestampScale defaults to 1,000,000 ns, so one Segment Tick is 1 ms.
-    let mut timecode_scale = 1_000_000_u64;
+    let mut timecode_scale = DEFAULT_TIMESTAMP_SCALE_NANOSECONDS;
     let mut duration = None;
     let mut tracks = Vec::new();
     let mut offset = segment.payload_offset;
@@ -220,35 +289,33 @@ pub fn parse(file: &mut File, file_len: u64) -> io::Result<Probe> {
         offset = element.end;
     }
 
-    let mut probe = Probe::new(if doc_type == Some("webm") {
-        "webm"
-    } else {
-        "mkv"
-    });
+    let mut media = MediaInfo::new(format);
     if let Some(duration) = duration {
         // Info.Duration is measured in Segment Ticks, not seconds.
-        let seconds = duration * timecode_scale as f64 / 1_000_000_000.0;
+        let seconds = duration * timecode_scale as f64 / NANOSECONDS_PER_SECOND;
         if seconds.is_finite() && seconds >= 0.0 {
-            probe.duration = Duration::try_from_secs_f64(seconds).ok();
+            media.duration = Duration::try_from_secs_f64(seconds).ok();
         }
     }
     for track in &tracks {
         // Matroska TrackType values are registry assignments, not bit flags.
         match track.kind {
-            1 => probe.video_streams.push(video_stream(track)),
-            2 => probe.audio_streams.push(audio_stream(track)),
-            17 => probe.subtitle_streams.push(subtitle_stream(track)),
+            TRACK_TYPE_VIDEO => media.video_streams.push(video_stream(track)),
+            TRACK_TYPE_AUDIO => media.audio_streams.push(audio_stream(track)),
+            TRACK_TYPE_SUBTITLE => media.subtitle_streams.push(subtitle_stream(track)),
             _ => {}
         }
     }
-    Ok(probe)
+    Ok(media)
 }
 
 fn audio_stream(track: &Track) -> AudioStream {
     AudioStream {
-        is_enabled: track.enabled,
-        is_default: track.default,
-        language: track_language(track),
+        info: StreamInfo {
+            is_enabled: track.enabled,
+            is_default: track.default,
+            language: track_language(track),
+        },
         codec: matroska_audio_codec(&track.codec_id),
         profile: matroska_audio_profile(&track.codec_id),
         layout: audio_layout(track.channels, None),
@@ -258,50 +325,60 @@ fn audio_stream(track: &Track) -> AudioStream {
 
 fn video_stream(track: &Track) -> VideoStream {
     let codec = matroska_video_codec(&track.codec_id);
-    // AVCDecoderConfigurationRecord stores profile_idc at byte 1. The HEVC
-    // record stores general_profile_idc in byte 1's low five bits and
-    // bitDepthLumaMinus8 in byte 17's low three bits.
+    // AVCDecoderConfigurationRecord stores profile_idc at byte 1. The HEVC record stores
+    // general_profile_idc in byte 1's low five bits and bitDepthLumaMinus8 in byte 17's low three
+    // bits.
     let profile = match codec.as_ref() {
         Some(VideoCodec::H264) => track
             .codec_private
-            .get(1)
+            .get(DECODER_CONFIG_PROFILE_OFFSET)
             .and_then(|value| avc_profile(*value)),
-        Some(VideoCodec::H265) => track.codec_private.get(1).and_then(|value| {
-            let profile = *value & 0x1F;
-            let bit_depth = track.codec_private.get(17).map(|depth| 8 + (depth & 0x07));
-            hevc_profile(profile, bit_depth)
-        }),
+        Some(VideoCodec::H265) => track
+            .codec_private
+            .get(DECODER_CONFIG_PROFILE_OFFSET)
+            .and_then(|value| {
+                let profile = *value & HEVC_PROFILE_IDC_MASK;
+                let bit_depth = track
+                    .codec_private
+                    .get(HEVC_BIT_DEPTH_OFFSET)
+                    .map(|depth| HEVC_BASE_BIT_DEPTH + (depth & HEVC_BIT_DEPTH_MASK));
+                hevc_profile(profile, bit_depth)
+            }),
         _ => None,
     };
     VideoStream {
-        is_enabled: track.enabled,
-        is_default: track.default,
-        language: track_language(track),
+        info: StreamInfo {
+            is_enabled: track.enabled,
+            is_default: track.default,
+            language: track_language(track),
+        },
         codec,
         profile,
-        width: u32::try_from(track.width).ok().filter(|value| *value > 0),
-        height: u32::try_from(track.height).ok().filter(|value| *value > 0),
+        width: pixel_dimension(track.width),
+        height: pixel_dimension(track.height),
         resolution: video_resolution(track.width, track.height, track.interlaced),
         frame_rate: track
             .default_duration
             .filter(|value| *value > 0)
-            .map(|nanoseconds| (1_000_000_000.0 / nanoseconds as f64) as f32),
+            .map(|nanoseconds| (NANOSECONDS_PER_SECOND / nanoseconds as f64) as f32),
         dynamic_range: None,
     }
 }
 
 fn subtitle_stream(track: &Track) -> SubtitleStream {
     SubtitleStream {
-        is_enabled: track.enabled,
-        is_default: track.default,
-        language: track_language(track),
+        info: StreamInfo {
+            is_enabled: track.enabled,
+            is_default: track.default,
+            language: track_language(track),
+        },
         codec: (!track.codec_id.is_empty()).then(|| track.codec_id.clone()),
     }
 }
 
 fn track_language(track: &Track) -> Option<Language> {
-    // LanguageIETF is the modern, more expressive field and takes precedence
-    // over the legacy ISO 639-2 Language element when both are present.
+    // LanguageIETF is the modern, more expressive field and takes precedence over the legacy ISO
+    // 639-2 Language element when both are present.
     track
         .language_ietf
         .as_deref()
@@ -344,12 +421,12 @@ fn read_file_element(file: &mut File, limit: u64) -> io::Result<FileElement> {
 }
 
 fn read_vint_from<R: Read>(reader: &mut R, id: bool) -> io::Result<Option<(u64, usize)>> {
-    let mut first = [0_u8; 1];
+    let mut first = [0_u8; VINT_PREFIX_BYTES];
     reader.read_exact(&mut first)?;
     let length = vint_length(first[0])?;
-    let mut bytes = [0_u8; 8];
+    let mut bytes = [0_u8; MAX_EBML_INTEGER_BYTES];
     bytes[0] = first[0];
-    reader.read_exact(&mut bytes[1..length])?;
+    reader.read_exact(&mut bytes[VINT_PREFIX_BYTES..length])?;
     decode_vint(&bytes[..length], id)
 }
 
@@ -365,34 +442,36 @@ fn read_vint(data: &[u8], id: bool) -> io::Result<Option<(u64, usize)>> {
 }
 
 fn vint_length(first: u8) -> io::Result<usize> {
-    // A VINT begins with zero or more width bits followed by a one-bit marker;
-    // the marker's position therefore gives the encoded byte length.
+    // A VINT begins with zero or more width bits followed by a one-bit marker; the marker's
+    // position therefore gives the encoded byte length.
     let zeros = first.leading_zeros() as usize;
-    if first == 0 || zeros >= 8 {
+    if first == 0 || zeros >= u8::BITS as usize {
         return Err(invalid("invalid EBML integer marker"));
     }
-    Ok(zeros + 1)
+    Ok(zeros + VINT_PREFIX_BYTES)
 }
 
 fn decode_vint(bytes: &[u8], id: bool) -> io::Result<Option<(u64, usize)>> {
-    let marker = 0x80_u8 >> (bytes.len() - 1);
-    // Element IDs include the marker as part of the registered identifier.
-    // Element sizes clear it and interpret only the remaining data bits.
+    let marker = VINT_MARKER_HIGH_BIT >> (bytes.len() - VINT_PREFIX_BYTES);
+    // Element IDs include the marker as part of the registered identifier. Element sizes clear it
+    // and interpret only the remaining data bits.
     let mut value = u64::from(if id {
         bytes[0]
     } else {
         bytes[0] & (marker - 1)
     });
-    for byte in &bytes[1..] {
+    for byte in &bytes[VINT_PREFIX_BYTES..] {
         value = value
-            .checked_shl(8)
+            .checked_shl(u8::BITS)
             .and_then(|value| value.checked_add(u64::from(*byte)))
             .ok_or_else(|| invalid("EBML integer overflow"))?;
     }
     if !id {
         // All VINT data bits set to one is the reserved unknown-size sentinel.
-        let unknown =
-            bytes[0] & (marker - 1) == marker - 1 && bytes[1..].iter().all(|byte| *byte == 0xFF);
+        let unknown = bytes[0] & (marker - 1) == marker - 1
+            && bytes[VINT_PREFIX_BYTES..]
+                .iter()
+                .all(|byte| *byte == VINT_UNKNOWN_DATA_BYTE);
         if unknown {
             return Ok(None);
         }
@@ -474,8 +553,8 @@ fn parse_video(data: &[u8], track: &mut Track) -> io::Result<()> {
             FLAG_INTERLACED => {
                 // Matroska uses an enumeration rather than a boolean here.
                 track.interlaced = match unsigned(element.payload)? {
-                    1 => Some(true),
-                    2 => Some(false),
+                    INTERLACING_INTERLACED => Some(true),
+                    INTERLACING_PROGRESSIVE => Some(false),
                     _ => None,
                 };
             }
@@ -496,21 +575,21 @@ fn parse_audio(data: &[u8], track: &mut Track) -> io::Result<()> {
 }
 
 fn unsigned(data: &[u8]) -> io::Result<u64> {
-    if data.is_empty() || data.len() > 8 {
+    if data.is_empty() || data.len() > MAX_EBML_INTEGER_BYTES {
         return Err(invalid("invalid EBML unsigned integer"));
     }
     Ok(data
         .iter()
-        .fold(0_u64, |value, byte| (value << 8) | u64::from(*byte)))
+        .fold(0_u64, |value, byte| (value << u8::BITS) | u64::from(*byte)))
 }
 
 fn float(data: &[u8]) -> io::Result<f64> {
     // EBML floats are big-endian IEEE-754 values and may be 32 or 64 bits.
     match data.len() {
-        4 => Ok(f32::from_bits(u32::from_be_bytes(
+        EBML_FLOAT32_BYTES => Ok(f32::from_bits(u32::from_be_bytes(
             data.try_into().expect("four-byte slice"),
         )) as f64),
-        8 => Ok(f64::from_bits(u64::from_be_bytes(
+        EBML_FLOAT64_BYTES => Ok(f64::from_bits(u64::from_be_bytes(
             data.try_into().expect("eight-byte slice"),
         ))),
         _ => Err(invalid("invalid EBML float")),

@@ -64,11 +64,11 @@ impl TokenExcerpt {
     }
 }
 
-impl TryFrom<Token> for TokenExcerpt {
+impl TryFrom<&Token> for TokenExcerpt {
     type Error = ();
 
-    fn try_from(token: Token) -> Result<Self, Self::Error> {
-        let (key, value) = if let Some(tag) = token.tag {
+    fn try_from(token: &Token) -> Result<Self, Self::Error> {
+        let (key, value) = if let Some(tag) = token.tag.as_ref() {
             (tag.key(), Some(tag.value()))
         } else {
             (token.ident.as_str(), None)
@@ -117,8 +117,8 @@ pub fn inspect_filepath(path: &str) -> InspectResult {
 
 fn inspect_path(path: &str) -> InspectResult {
     let filename_inspector = FilenameInspector::new(path).analyze();
-    let prefix_len = path.len() - filename_inspector.filename.len();
-    let media_type = filename_inspector.media_type.to_string();
+    let prefix_len = path.len() - filename_inspector.filename().len();
+    let media_type = filename_inspector.media_type().to_string();
     let mut metadata = vec![MetadataField {
         key: "media_type",
         value: media_type.clone(),
@@ -158,7 +158,7 @@ fn inspect_path(path: &str) -> InspectResult {
 
     // Append filename tokens, offset by the prefix length
     let prefix_len = prefix_len as i32;
-    tokens.extend(filename_inspector.tokens.into_iter().filter_map(|token| {
+    tokens.extend(filename_inspector.tokens().iter().filter_map(|token| {
         TokenExcerpt::try_from(token).ok().map(|mut t| {
             t.start += prefix_len;
             t.end += prefix_len;
@@ -166,9 +166,9 @@ fn inspect_path(path: &str) -> InspectResult {
         })
     }));
 
-    // Rust string positions are UTF-8 byte offsets, while JavaScript string
-    // positions are UTF-16 code-unit offsets. Convert at the WASM boundary so
-    // browser consumers can safely use substring and DOM Range APIs.
+    // Rust string positions are UTF-8 byte offsets, while JavaScript string positions are UTF-16
+    // code-unit offsets. Convert at the WASM boundary so browser consumers can safely use substring
+    // and DOM Range APIs.
     for token in &mut tokens {
         token.start = utf16_position(path, token.start);
         token.end = utf16_position(path, token.end);

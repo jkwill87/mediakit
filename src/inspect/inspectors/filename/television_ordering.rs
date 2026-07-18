@@ -7,8 +7,8 @@ use crate::regexp::RegexVar;
 impl FilenameInspector {
     /// Selects the season and episode number for a television series.
     ///
-    /// Recognizes `S01E01` and `01x01` formatting, including multipart episodes
-    /// such as `S01E01E02`, `S01E01-E03`, and `S01E01-02`.
+    /// Recognizes `S01E01` and `01x01` formatting, including multipart episodes such as
+    /// `S01E01E02`, `S01E01-E03`, and `S01E01-02`.
     ///
     /// **Preconditions:**
     /// - None

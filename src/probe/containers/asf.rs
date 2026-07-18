@@ -1,23 +1,20 @@
-//! Parses ASF and WMV header-object metadata.
+//! Detects ASF containers and probes their header-object metadata.
 //!
-//! Advanced Systems Format is an object graph: every object begins with a
-//! 128-bit GUID and a little-endian 64-bit size that includes the 24-byte
-//! object header. The top-level Header Object contains File Properties and one
-//! Stream Properties Object per stream. This parser stops there; it does not
-//! read ASF data packets.
+//! Advanced Systems Format is an object graph: every object begins with a 128-bit GUID and a
+//! little-endian 64-bit size that includes the 24-byte object header. The top-level Header Object
+//! contains File Properties and one Stream Properties Object per stream. This probe stops there;
+//! it does not read ASF data packets.
 //!
-//! GUIDs below are written in their on-disk byte order. The first three GUID
-//! fields are little-endian in the ASF byte stream, so their byte arrays look
-//! different from the conventional hyphenated GUID spelling in the comments.
+//! GUIDs below are written in their on-disk byte order. The first three GUID fields are
+//! little-endian in the ASF byte stream, so their byte arrays look different from the conventional
+//! hyphenated GUID spelling in the comments.
 
-use super::binary::{fourcc, invalid, read_region, u16_le, u32_le, u64_le};
-use super::{
-    Probe, WAVE_FORMAT_EXTENSIBLE, audio_layout, video_codec, video_resolution, wave_audio_codec,
-};
-use crate::probe::{AudioStream, VideoStream};
-use std::fs::File;
+use super::binary::{invalid, read_region, u16_le, u32_le, u64_le};
+use super::windows_media::{BITMAP_INFO_COMPRESSION_BYTES, parse_bitmap_info, parse_wave_audio};
+use super::{MediaInfo, ProbeInput, pixel_dimension, video_codec, video_resolution};
+use crate::meta::fields::MediaFormat;
+use crate::probe::{AudioStream, StreamInfo, VideoStream};
 use std::io;
-use std::mem::size_of;
 use std::time::Duration;
 
 /// ASF Header Object (`75B22630-668E-11CF-A6D9-00AA0062CE6C`).
@@ -65,34 +62,22 @@ const ASF_DURATION_UNIT_NANOSECONDS: u64 = 100;
 const STREAM_PROPERTIES_PREFIX_BYTES: usize = 54;
 /// Stream Properties payload offset of Type-Specific Data length.
 const STREAM_PROPERTIES_TYPE_SIZE_OFFSET: usize = 40;
-/// Minimum encoded size of `WAVEFORMATEX` through `nBlockAlign`.
-const WAVE_FORMAT_MIN_BYTES: usize = 16;
-/// `WAVEFORMATEX.nChannels` offset.
-const WAVE_CHANNELS_OFFSET: usize = 2;
-/// `WAVEFORMATEX.nAvgBytesPerSec` offset.
-const WAVE_AVERAGE_BYTES_OFFSET: usize = 8;
-/// Minimum encoded size of `WAVEFORMATEXTENSIBLE` used by this parser.
-const WAVE_EXTENSIBLE_MIN_BYTES: usize = 40;
-/// `WAVEFORMATEXTENSIBLE.dwChannelMask` offset.
-const WAVE_CHANNEL_MASK_OFFSET: usize = 20;
-/// Offset of the format tag embedded at the start of the SubFormat GUID.
-const WAVE_SUBFORMAT_TAG_OFFSET: usize = 24;
 /// Fixed ASF video Type-Specific Data prefix before `BITMAPINFOHEADER`.
 const ASF_VIDEO_PREFIX_BYTES: usize = 11;
 /// Offset of the ASF video format-size field.
 const ASF_VIDEO_FORMAT_SIZE_OFFSET: usize = 9;
-/// Minimum `BITMAPINFOHEADER` size needed through the compression FourCC.
-const BITMAP_HEADER_MIN_BYTES: usize = 20;
-/// `BITMAPINFOHEADER.biWidth` offset.
-const BITMAP_WIDTH_OFFSET: usize = 4;
-/// `BITMAPINFOHEADER.biHeight` offset.
-const BITMAP_HEIGHT_OFFSET: usize = 8;
-/// `BITMAPINFOHEADER.biCompression` FourCC offset.
-const BITMAP_COMPRESSION_OFFSET: usize = 16;
 
-pub fn parse(file: &mut File, file_len: u64) -> io::Result<Probe> {
-    // The fixed Header Object prefix is GUID (16), size (8), object count (4),
-    // plus two reserved bytes. Child objects follow at byte 30.
+/// Detects the ASF Header Object GUID.
+pub(in crate::probe) fn matches(prefix: &[u8]) -> bool {
+    prefix.starts_with(&HEADER_GUID)
+}
+
+/// Probes a detected ASF container.
+pub(in crate::probe) fn probe(input: &mut ProbeInput) -> io::Result<MediaInfo> {
+    let file_len = input.len();
+    let file = input.file();
+    // The fixed Header Object prefix is GUID (16), size (8), object count (4), plus two reserved
+    // bytes. Child objects follow at byte 30.
     let header = read_region(file, 0, HEADER_OBJECT_PREFIX_BYTES as u64, file_len)?;
     if header[..ASF_GUID_BYTES] != HEADER_GUID {
         return Err(invalid("ASF header GUID missing"));
@@ -105,10 +90,10 @@ pub fn parse(file: &mut File, file_len: u64) -> io::Result<Probe> {
     let object_count = usize::try_from(u32_le(&data, HEADER_OBJECT_COUNT_OFFSET)?)
         .map_err(|_| invalid("ASF object count is too large"))?;
     let mut offset = HEADER_OBJECT_PREFIX_BYTES;
-    let mut probe = Probe::new("wmv");
+    let mut media = MediaInfo::new(MediaFormat::Wmv);
     for _ in 0..object_count {
-        // Every ASF child-object size includes its 16-byte GUID and 8-byte
-        // little-endian size field.
+        // Every ASF child-object size includes its 16-byte GUID and 8-byte little-endian size
+        // field.
         if offset + OBJECT_HEADER_BYTES > data.len() {
             return Err(invalid("truncated ASF object"));
         }
@@ -127,32 +112,32 @@ pub fn parse(file: &mut File, file_len: u64) -> io::Result<Probe> {
             .get(offset + OBJECT_HEADER_BYTES..end)
             .ok_or_else(|| invalid("ASF object exceeds header"))?;
         if guid == FILE_PROPERTIES_GUID {
-            parse_file_properties(payload, &mut probe)?;
+            parse_file_properties(payload, &mut media)?;
         } else if guid == STREAM_PROPERTIES_GUID {
-            parse_stream_properties(payload, &mut probe)?;
+            parse_stream_properties(payload, &mut media)?;
         }
         offset = end;
     }
-    Ok(probe)
+    Ok(media)
 }
 
-fn parse_file_properties(data: &[u8], probe: &mut Probe) -> io::Result<()> {
+fn parse_file_properties(data: &[u8], media: &mut MediaInfo) -> io::Result<()> {
     if data.len() < FILE_PROPERTIES_MIN_BYTES {
         return Err(invalid("truncated ASF file properties"));
     }
-    // Offsets are relative to the object payload (after its 24-byte header).
-    // Play Duration is measured in 100-nanosecond units and includes Preroll;
-    // Preroll itself is stored in milliseconds.
+    // Offsets are relative to the object payload (after its 24-byte header). Play Duration is
+    // measured in 100-nanosecond units and includes Preroll; Preroll itself is stored in
+    // milliseconds.
     let play_duration = u64_le(data, FILE_PROPERTIES_PLAY_DURATION_OFFSET)?;
     let preroll_ms = u64_le(data, FILE_PROPERTIES_PREROLL_OFFSET)?;
-    probe.duration = Some(
+    media.duration = Some(
         Duration::from_nanos(play_duration.saturating_mul(ASF_DURATION_UNIT_NANOSECONDS))
             .saturating_sub(Duration::from_millis(preroll_ms)),
     );
     Ok(())
 }
 
-fn parse_stream_properties(data: &[u8], probe: &mut Probe) -> io::Result<()> {
+fn parse_stream_properties(data: &[u8], media: &mut MediaInfo) -> io::Result<()> {
     // The 54-byte fixed prefix contains two stream-type GUIDs, time offset,
     // type/error-correction lengths, and stream flags. Type-Specific Data then
     // holds WAVEFORMATEX or ASF's video-format structure.
@@ -168,64 +153,40 @@ fn parse_stream_properties(data: &[u8], probe: &mut Probe) -> io::Result<()> {
         .get(STREAM_PROPERTIES_PREFIX_BYTES..STREAM_PROPERTIES_PREFIX_BYTES + type_size)
         .ok_or_else(|| invalid("truncated ASF stream type data"))?;
     if stream_type == AUDIO_MEDIA_GUID {
-        probe.audio_streams.push(parse_audio(type_data)?);
+        media.audio_streams.push(parse_audio(type_data)?);
     } else if stream_type == VIDEO_MEDIA_GUID {
-        probe.video_streams.push(parse_video(type_data)?);
+        media.video_streams.push(parse_video(type_data)?);
     }
     Ok(())
 }
 
 fn parse_audio(data: &[u8]) -> io::Result<AudioStream> {
-    if data.len() < WAVE_FORMAT_MIN_BYTES {
-        return Err(invalid("truncated ASF audio format"));
-    }
-    let mut format_tag = u16_le(data, 0)?;
-    let channels = u64::from(u16_le(data, WAVE_CHANNELS_OFFSET)?);
-    let average_bytes = u32_le(data, WAVE_AVERAGE_BYTES_OFFSET)?;
-    let mut channel_mask = None;
-    // WAVE_FORMAT_EXTENSIBLE (0xFFFE) appends valid-bits metadata, a speaker
-    // channel mask, and a SubFormat GUID whose first 16 bits repeat the actual
-    // WAVE format tag.
-    if format_tag == WAVE_FORMAT_EXTENSIBLE && data.len() >= WAVE_EXTENSIBLE_MIN_BYTES {
-        channel_mask = Some(u32_le(data, WAVE_CHANNEL_MASK_OFFSET)?);
-        format_tag = u16_le(data, WAVE_SUBFORMAT_TAG_OFFSET)?;
-    }
-    Ok(AudioStream {
-        codec: wave_audio_codec(format_tag),
-        layout: audio_layout(channels, channel_mask),
-        bit_rate: average_bytes.checked_mul(u8::BITS),
-        ..AudioStream::default()
-    })
+    parse_wave_audio(data, StreamInfo::default())
 }
 
 fn parse_video(data: &[u8]) -> io::Result<VideoStream> {
-    if data.len() < ASF_VIDEO_PREFIX_BYTES + BITMAP_HEADER_MIN_BYTES {
+    if data.len() < ASF_VIDEO_PREFIX_BYTES + BITMAP_INFO_COMPRESSION_BYTES {
         return Err(invalid("truncated ASF video format"));
     }
-    // ASF video Type-Specific Data has an 11-byte prefix followed by a Windows
-    // BITMAPINFOHEADER. Its signed height is negative for top-down images, so
-    // only the magnitude is relevant to display resolution.
+    // ASF video Type-Specific Data has an 11-byte prefix followed by a Windows BITMAPINFOHEADER.
+    // Its signed height is negative for top-down images, so only the magnitude is relevant to
+    // display resolution.
     let format_size = usize::from(u16_le(data, ASF_VIDEO_FORMAT_SIZE_OFFSET)?);
     let bitmap = data
         .get(ASF_VIDEO_PREFIX_BYTES..ASF_VIDEO_PREFIX_BYTES + format_size)
         .ok_or_else(|| invalid("truncated ASF bitmap format"))?;
-    if bitmap.len() < BITMAP_HEADER_MIN_BYTES {
+    if bitmap.len() < BITMAP_INFO_COMPRESSION_BYTES {
         return Err(invalid("truncated ASF bitmap header"));
     }
-    let width = u64::from(u32_le(bitmap, BITMAP_WIDTH_OFFSET)?);
-    let height = i32::from_le_bytes(
-        bitmap[BITMAP_HEIGHT_OFFSET..BITMAP_HEIGHT_OFFSET + size_of::<i32>()]
-            .try_into()
-            .expect("four-byte bitmap height"),
-    )
-    .unsigned_abs()
-    .into();
-    let compression = fourcc(bitmap, BITMAP_COMPRESSION_OFFSET)?;
+    let bitmap = parse_bitmap_info(bitmap)?;
+    let compression = bitmap
+        .compression
+        .expect("validated bitmap header includes compression");
     Ok(VideoStream {
         codec: video_codec(&compression),
-        width: u32::try_from(width).ok().filter(|value| *value > 0),
-        height: u32::try_from(height).ok().filter(|value| *value > 0),
-        resolution: video_resolution(width, height, None),
+        width: pixel_dimension(bitmap.width),
+        height: pixel_dimension(bitmap.height),
+        resolution: video_resolution(bitmap.width, bitmap.height, None),
         ..VideoStream::default()
     })
 }

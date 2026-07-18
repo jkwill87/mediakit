@@ -11,12 +11,12 @@ use std::path::{Path, PathBuf};
 
 /// Parses media metadata from a file's properties.
 ///
-/// Container probing is best-effort: invalid and unsupported content retains
-/// extension-derived file-format and MIME tags rather than failing inspection.
+/// Container probing is best-effort: invalid and unsupported content retains extension-derived
+/// file-format and MIME tags rather than failing inspection.
 pub struct FileInspector {
-    pub(super) path: PathBuf,
-    pub(super) tags: Vec<Tag>,
-    pub(super) inspect_content: bool,
+    path: PathBuf,
+    tags: Vec<Tag>,
+    inspect_content: bool,
 }
 
 impl FileInspector {
@@ -31,8 +31,8 @@ impl FileInspector {
 
     /// Enables or disables media-container content probing.
     ///
-    /// File size and extension-derived file-format/MIME tags are still inspected
-    /// when content probing is disabled.
+    /// File size and extension-derived file-format/MIME tags are still inspected when content
+    /// probing is disabled.
     pub const fn with_content_inspection(mut self, enabled: bool) -> Self {
         self.inspect_content = enabled;
         self

@@ -1,6 +1,6 @@
 //! Probes a media container and prints its ordered stream metadata.
 
-use mediakit::probe::{ProbeError, probe};
+use mediakit::probe::{FileProber, ProbeError};
 use std::env;
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -21,7 +21,7 @@ fn main() -> ExitCode {
         return ExitCode::FAILURE;
     };
 
-    let media = match probe(&path) {
+    let media = match FileProber::new(&path).and_then(|prober| prober.probe()) {
         Ok(media) => media,
         Err(ProbeError::UnsupportedFormat) => {
             eprintln!("Unsupported media format: {}", path.display());
@@ -59,8 +59,10 @@ fn main() -> ExitCode {
         println!("video_stream[{index}] primary={primary}: {stream:#?}");
     }
 
+    let primary_subtitle = media.primary_subtitle_stream();
     for (index, stream) in media.subtitle_streams.iter().enumerate() {
-        println!("subtitle_stream[{index}]: {stream:#?}");
+        let primary = primary_subtitle.is_some_and(|primary| std::ptr::eq(stream, primary));
+        println!("subtitle_stream[{index}] primary={primary}: {stream:#?}");
     }
 
     ExitCode::SUCCESS

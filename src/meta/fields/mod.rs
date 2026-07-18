@@ -19,6 +19,7 @@ pub use air_date::AirDate;
 pub use audio_codec::AudioCodec;
 pub use audio_layout::AudioLayout;
 pub use audio_profile::AudioProfile;
+pub use country::{COUNTRY_ALL, Country};
 pub use language::{LANG_ALL, Language};
 pub use media_format::{ContentKind, MediaFormat};
 pub use media_type::MediaType;

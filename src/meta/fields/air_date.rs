@@ -20,8 +20,8 @@ impl AirDate {
         Ok(Self { year, month, day })
     }
 
-    /// Parses a date written as `YYYY-MM-DD`, `YYYY.MM.DD`, `YYYY/MM/DD`,
-    /// or `YYYY MM DD` into an [AirDate].
+    /// Parses a date written as `YYYY-MM-DD`, `YYYY.MM.DD`, `YYYY/MM/DD`, or `YYYY MM DD` into an
+    /// [AirDate].
     pub fn parse(s: &str) -> Result<Self, DateError> {
         let parts: Vec<&str> = s.split(['-', '.', '/', ' ']).collect();
         if parts.len() != 3 {

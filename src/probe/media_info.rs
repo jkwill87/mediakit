@@ -1,8 +1,8 @@
 //! Defines ordered container and stream metadata from probing.
 
 use crate::meta::fields::{
-    AudioCodec, AudioLayout, AudioProfile, Language, VideoCodec, VideoDynamicRange, VideoProfile,
-    VideoResolution,
+    AudioCodec, AudioLayout, AudioProfile, Language, MediaFormat, VideoCodec, VideoDynamicRange,
+    VideoProfile, VideoResolution,
 };
 use std::time::Duration;
 
@@ -10,8 +10,8 @@ use std::time::Duration;
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
 pub struct MediaInfo {
-    /// The normalized container name, such as `mkv`, `webm`, `mp4`, or `mov`.
-    pub container: String,
+    /// The normalized media container format detected from content.
+    pub container: MediaFormat,
     /// The media duration when declared by the container.
     pub duration: Option<Duration>,
     /// Audio streams in container order.
@@ -23,9 +23,9 @@ pub struct MediaInfo {
 }
 
 impl MediaInfo {
-    pub(crate) fn new(container: impl Into<String>) -> Self {
+    pub(super) const fn new(container: MediaFormat) -> Self {
         Self {
-            container: container.into(),
+            container,
             duration: None,
             audio_streams: Vec::new(),
             video_streams: Vec::new(),
@@ -35,43 +35,68 @@ impl MediaInfo {
 
     /// Returns the preferred audio stream.
     ///
-    /// Enabled default streams are preferred, followed by enabled streams and
-    /// finally the first audio stream in container order.
+    /// Enabled default streams are preferred, followed by enabled streams and finally the first
+    /// audio stream in container order.
     pub fn primary_audio_stream(&self) -> Option<&AudioStream> {
-        primary_stream(&self.audio_streams, |stream| {
-            (stream.is_enabled, stream.is_default)
-        })
+        primary_stream(&self.audio_streams, |stream| &stream.info)
     }
 
     /// Returns the preferred video stream.
     ///
-    /// Enabled default streams are preferred, followed by enabled streams and
-    /// finally the first video stream in container order.
+    /// Enabled default streams are preferred, followed by enabled streams and finally the first
+    /// video stream in container order.
     pub fn primary_video_stream(&self) -> Option<&VideoStream> {
-        primary_stream(&self.video_streams, |stream| {
-            (stream.is_enabled, stream.is_default)
-        })
+        primary_stream(&self.video_streams, |stream| &stream.info)
+    }
+
+    /// Returns the preferred embedded subtitle stream.
+    ///
+    /// Enabled default streams are preferred, followed by enabled streams and finally the first
+    /// subtitle stream in container order.
+    pub fn primary_subtitle_stream(&self) -> Option<&SubtitleStream> {
+        primary_stream(&self.subtitle_streams, |stream| &stream.info)
     }
 }
 
-fn primary_stream<T>(streams: &[T], flags: impl Fn(&T) -> (bool, bool)) -> Option<&T> {
+fn primary_stream<T>(streams: &[T], info: impl Fn(&T) -> &StreamInfo) -> Option<&T> {
     streams
         .iter()
-        .find(|stream| flags(stream) == (true, true))
-        .or_else(|| streams.iter().find(|stream| flags(stream).0))
+        .find(|stream| {
+            let info = info(stream);
+            info.is_enabled && info.is_default
+        })
+        .or_else(|| streams.iter().find(|stream| info(stream).is_enabled))
         .or_else(|| streams.first())
 }
 
-/// Technical metadata for one audio stream.
-#[derive(Debug, Clone, PartialEq)]
+/// Container-independent metadata shared by every media stream.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
-pub struct AudioStream {
+pub struct StreamInfo {
     /// Whether the container marks the stream as enabled.
     pub is_enabled: bool,
     /// Whether the container marks the stream as the default.
     pub is_default: bool,
     /// The normalized language declared by the container.
     pub language: Option<Language>,
+}
+
+impl Default for StreamInfo {
+    fn default() -> Self {
+        Self {
+            is_enabled: true,
+            is_default: false,
+            language: None,
+        }
+    }
+}
+
+/// Technical metadata for one audio stream.
+#[derive(Debug, Clone, PartialEq, Default)]
+#[non_exhaustive]
+pub struct AudioStream {
+    /// Container-independent stream metadata.
+    pub info: StreamInfo,
     /// The detected audio codec.
     pub codec: Option<AudioCodec>,
     /// The detected codec profile.
@@ -82,30 +107,12 @@ pub struct AudioStream {
     pub bit_rate: Option<u32>,
 }
 
-impl Default for AudioStream {
-    fn default() -> Self {
-        Self {
-            is_enabled: true,
-            is_default: false,
-            language: None,
-            codec: None,
-            profile: None,
-            layout: None,
-            bit_rate: None,
-        }
-    }
-}
-
 /// Technical metadata for one video stream.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 #[non_exhaustive]
 pub struct VideoStream {
-    /// Whether the container marks the stream as enabled.
-    pub is_enabled: bool,
-    /// Whether the container marks the stream as the default.
-    pub is_default: bool,
-    /// The normalized language declared by the container.
-    pub language: Option<Language>,
+    /// Container-independent stream metadata.
+    pub info: StreamInfo,
     /// The detected video codec.
     pub codec: Option<VideoCodec>,
     /// The detected codec profile.
@@ -122,46 +129,14 @@ pub struct VideoStream {
     pub dynamic_range: Option<VideoDynamicRange>,
 }
 
-impl Default for VideoStream {
-    fn default() -> Self {
-        Self {
-            is_enabled: true,
-            is_default: false,
-            language: None,
-            codec: None,
-            profile: None,
-            width: None,
-            height: None,
-            resolution: None,
-            frame_rate: None,
-            dynamic_range: None,
-        }
-    }
-}
-
 /// Technical metadata for one embedded subtitle stream.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 #[non_exhaustive]
 pub struct SubtitleStream {
-    /// Whether the container marks the stream as enabled.
-    pub is_enabled: bool,
-    /// Whether the container marks the stream as the default.
-    pub is_default: bool,
-    /// The normalized language declared by the container.
-    pub language: Option<Language>,
+    /// Container-independent stream metadata.
+    pub info: StreamInfo,
     /// The container's subtitle codec identifier, such as `S_TEXT/UTF8`, `tx3g`, or `pgs`.
     pub codec: Option<String>,
-}
-
-impl Default for SubtitleStream {
-    fn default() -> Self {
-        Self {
-            is_enabled: true,
-            is_default: false,
-            language: None,
-            codec: None,
-        }
-    }
 }
 
 crate::unit_tests!("media_info.test.rs");

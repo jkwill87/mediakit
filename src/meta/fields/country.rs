@@ -1,10 +1,5 @@
 //! Defines country metadata values.
 
-#![expect(
-    dead_code,
-    reason = "country metadata is staged for a future public field implementation"
-)]
-
 /// Country represents the production country of a media file.
 #[derive(Debug, Clone, Copy)]
 pub struct Country {
@@ -16,1242 +11,1242 @@ pub struct Country {
     pub iso_3166_1_a3: &'static str,
 }
 
-pub const COUNTRY_AFGHANISTAN: Country = Country {
+const COUNTRY_AFGHANISTAN: Country = Country {
     name: "Afghanistan",
     iso_3166_1_a2: "AF",
     iso_3166_1_a3: "AFG",
 };
-pub const COUNTRY_ALANDISLANDS: Country = Country {
+const COUNTRY_ALANDISLANDS: Country = Country {
     name: "Aland Islands",
     iso_3166_1_a2: "AX",
     iso_3166_1_a3: "ALA",
 };
-pub const COUNTRY_ALBANIA: Country = Country {
+const COUNTRY_ALBANIA: Country = Country {
     name: "Albania",
     iso_3166_1_a2: "AL",
     iso_3166_1_a3: "ALB",
 };
-pub const COUNTRY_ALGERIA: Country = Country {
+const COUNTRY_ALGERIA: Country = Country {
     name: "Algeria",
     iso_3166_1_a2: "DZ",
     iso_3166_1_a3: "DZA",
 };
-pub const COUNTRY_AMERICAN_SAMOA: Country = Country {
+const COUNTRY_AMERICAN_SAMOA: Country = Country {
     name: "American Samoa",
     iso_3166_1_a2: "AS",
     iso_3166_1_a3: "ASM",
 };
-pub const COUNTRY_ANDORRA: Country = Country {
+const COUNTRY_ANDORRA: Country = Country {
     name: "Andorra",
     iso_3166_1_a2: "AD",
     iso_3166_1_a3: "AND",
 };
-pub const COUNTRY_ANGOLA: Country = Country {
+const COUNTRY_ANGOLA: Country = Country {
     name: "Angola",
     iso_3166_1_a2: "AO",
     iso_3166_1_a3: "AGO",
 };
-pub const COUNTRY_ANGUILLA: Country = Country {
+const COUNTRY_ANGUILLA: Country = Country {
     name: "Anguilla",
     iso_3166_1_a2: "AI",
     iso_3166_1_a3: "AIA",
 };
-pub const COUNTRY_ANTARCTICA: Country = Country {
+const COUNTRY_ANTARCTICA: Country = Country {
     name: "Antarctica",
     iso_3166_1_a2: "AQ",
     iso_3166_1_a3: "ATA",
 };
-pub const COUNTRY_ANTIGUAANDBARBUDA: Country = Country {
+const COUNTRY_ANTIGUAANDBARBUDA: Country = Country {
     name: "Antigua and Barbuda",
     iso_3166_1_a2: "AG",
     iso_3166_1_a3: "ATG",
 };
-pub const COUNTRY_ARGENTINA: Country = Country {
+const COUNTRY_ARGENTINA: Country = Country {
     name: "Argentina",
     iso_3166_1_a2: "AR",
     iso_3166_1_a3: "ARG",
 };
-pub const COUNTRY_ARMENIA: Country = Country {
+const COUNTRY_ARMENIA: Country = Country {
     name: "Armenia",
     iso_3166_1_a2: "AM",
     iso_3166_1_a3: "ARM",
 };
-pub const COUNTRY_ARUBA: Country = Country {
+const COUNTRY_ARUBA: Country = Country {
     name: "Aruba",
     iso_3166_1_a2: "AW",
     iso_3166_1_a3: "ABW",
 };
-pub const COUNTRY_AUSTRALIA: Country = Country {
+const COUNTRY_AUSTRALIA: Country = Country {
     name: "Australia",
     iso_3166_1_a2: "AU",
     iso_3166_1_a3: "AUS",
 };
-pub const COUNTRY_AUSTRIA: Country = Country {
+const COUNTRY_AUSTRIA: Country = Country {
     name: "Austria",
     iso_3166_1_a2: "AT",
     iso_3166_1_a3: "AUT",
 };
-pub const COUNTRY_AZERBAIJAN: Country = Country {
+const COUNTRY_AZERBAIJAN: Country = Country {
     name: "Azerbaijan",
     iso_3166_1_a2: "AZ",
     iso_3166_1_a3: "AZE",
 };
-pub const COUNTRY_BAHAMAS: Country = Country {
+const COUNTRY_BAHAMAS: Country = Country {
     name: "Bahamas",
     iso_3166_1_a2: "BS",
     iso_3166_1_a3: "BHS",
 };
-pub const COUNTRY_BAHRAIN: Country = Country {
+const COUNTRY_BAHRAIN: Country = Country {
     name: "Bahrain",
     iso_3166_1_a2: "BH",
     iso_3166_1_a3: "BHR",
 };
-pub const COUNTRY_BANGLADESH: Country = Country {
+const COUNTRY_BANGLADESH: Country = Country {
     name: "Bangladesh",
     iso_3166_1_a2: "BD",
     iso_3166_1_a3: "BGD",
 };
-pub const COUNTRY_BARBADOS: Country = Country {
+const COUNTRY_BARBADOS: Country = Country {
     name: "Barbados",
     iso_3166_1_a2: "BB",
     iso_3166_1_a3: "BRB",
 };
-pub const COUNTRY_BELARUS: Country = Country {
+const COUNTRY_BELARUS: Country = Country {
     name: "Belarus",
     iso_3166_1_a2: "BY",
     iso_3166_1_a3: "BLR",
 };
-pub const COUNTRY_BELGIUM: Country = Country {
+const COUNTRY_BELGIUM: Country = Country {
     name: "Belgium",
     iso_3166_1_a2: "BE",
     iso_3166_1_a3: "BEL",
 };
-pub const COUNTRY_BELIZE: Country = Country {
+const COUNTRY_BELIZE: Country = Country {
     name: "Belize",
     iso_3166_1_a2: "BZ",
     iso_3166_1_a3: "BLZ",
 };
-pub const COUNTRY_BENIN: Country = Country {
+const COUNTRY_BENIN: Country = Country {
     name: "Benin",
     iso_3166_1_a2: "BJ",
     iso_3166_1_a3: "BEN",
 };
-pub const COUNTRY_BERMUDA: Country = Country {
+const COUNTRY_BERMUDA: Country = Country {
     name: "Bermuda",
     iso_3166_1_a2: "BM",
     iso_3166_1_a3: "BMU",
 };
-pub const COUNTRY_BHUTAN: Country = Country {
+const COUNTRY_BHUTAN: Country = Country {
     name: "Bhutan",
     iso_3166_1_a2: "BT",
     iso_3166_1_a3: "BTN",
 };
-pub const COUNTRY_BOLIVIA: Country = Country {
+const COUNTRY_BOLIVIA: Country = Country {
     name: "Bolivia (Plurinational State of)",
     iso_3166_1_a2: "BO",
     iso_3166_1_a3: "BOL",
 };
-pub const COUNTRY_BONAIRE: Country = Country {
+const COUNTRY_BONAIRE: Country = Country {
     name: "Bonaire, Sint Eustatius and Saba",
     iso_3166_1_a2: "BQ",
     iso_3166_1_a3: "BES",
 };
-pub const COUNTRY_BOSNIAANDHERZEGOVINA: Country = Country {
+const COUNTRY_BOSNIAANDHERZEGOVINA: Country = Country {
     name: "Bosnia and Herzegovina",
     iso_3166_1_a2: "BA",
     iso_3166_1_a3: "BIH",
 };
-pub const COUNTRY_BOTSWANA: Country = Country {
+const COUNTRY_BOTSWANA: Country = Country {
     name: "Botswana",
     iso_3166_1_a2: "BW",
     iso_3166_1_a3: "BWA",
 };
-pub const COUNTRY_BOUVETISLAND: Country = Country {
+const COUNTRY_BOUVETISLAND: Country = Country {
     name: "Bouvet Island",
     iso_3166_1_a2: "BV",
     iso_3166_1_a3: "BVT",
 };
-pub const COUNTRY_BRAZIL: Country = Country {
+const COUNTRY_BRAZIL: Country = Country {
     name: "Brazil",
     iso_3166_1_a2: "BR",
     iso_3166_1_a3: "BRA",
 };
-pub const COUNTRY_BRITISHINDIANOCEANTERRITORY: Country = Country {
+const COUNTRY_BRITISHINDIANOCEANTERRITORY: Country = Country {
     name: "British Indian Ocean Territory",
     iso_3166_1_a2: "IO",
     iso_3166_1_a3: "IOT",
 };
-pub const COUNTRY_BRUNEIDARUSSALAM: Country = Country {
+const COUNTRY_BRUNEIDARUSSALAM: Country = Country {
     name: "Brunei Darussalam",
     iso_3166_1_a2: "BN",
     iso_3166_1_a3: "BRN",
 };
-pub const COUNTRY_BULGARIA: Country = Country {
+const COUNTRY_BULGARIA: Country = Country {
     name: "Bulgaria",
     iso_3166_1_a2: "BG",
     iso_3166_1_a3: "BGR",
 };
-pub const COUNTRY_BURKINAFASO: Country = Country {
+const COUNTRY_BURKINAFASO: Country = Country {
     name: "Burkina Faso",
     iso_3166_1_a2: "BF",
     iso_3166_1_a3: "BFA",
 };
-pub const COUNTRY_BURUNDI: Country = Country {
+const COUNTRY_BURUNDI: Country = Country {
     name: "Burundi",
     iso_3166_1_a2: "BI",
     iso_3166_1_a3: "BDI",
 };
-pub const COUNTRY_CABO_VERDE: Country = Country {
+const COUNTRY_CABO_VERDE: Country = Country {
     name: "Cabo Verde",
     iso_3166_1_a2: "CV",
     iso_3166_1_a3: "CPV",
 };
-pub const COUNTRY_CAMBODIA: Country = Country {
+const COUNTRY_CAMBODIA: Country = Country {
     name: "Cambodia",
     iso_3166_1_a2: "KH",
     iso_3166_1_a3: "KHM",
 };
-pub const COUNTRY_CAMEROON: Country = Country {
+const COUNTRY_CAMEROON: Country = Country {
     name: "Cameroon",
     iso_3166_1_a2: "CM",
     iso_3166_1_a3: "CMR",
 };
-pub const COUNTRY_CANADA: Country = Country {
+const COUNTRY_CANADA: Country = Country {
     name: "Canada",
     iso_3166_1_a2: "CA",
     iso_3166_1_a3: "CAN",
 };
-pub const COUNTRY_CAYMANISLANDS: Country = Country {
+const COUNTRY_CAYMANISLANDS: Country = Country {
     name: "Cayman Islands",
     iso_3166_1_a2: "KY",
     iso_3166_1_a3: "CYM",
 };
-pub const COUNTRY_CENTRALAFRICANREPUBLIC: Country = Country {
+const COUNTRY_CENTRALAFRICANREPUBLIC: Country = Country {
     name: "Central African Republic",
     iso_3166_1_a2: "CF",
     iso_3166_1_a3: "CAF",
 };
-pub const COUNTRY_CHAD: Country = Country {
+const COUNTRY_CHAD: Country = Country {
     name: "Chad",
     iso_3166_1_a2: "TD",
     iso_3166_1_a3: "TCD",
 };
-pub const COUNTRY_CHILE: Country = Country {
+const COUNTRY_CHILE: Country = Country {
     name: "Chile",
     iso_3166_1_a2: "CL",
     iso_3166_1_a3: "CHL",
 };
-pub const COUNTRY_CHINA: Country = Country {
+const COUNTRY_CHINA: Country = Country {
     name: "China",
     iso_3166_1_a2: "CN",
     iso_3166_1_a3: "CHN",
 };
-pub const COUNTRY_CHRISTMASISLAND: Country = Country {
+const COUNTRY_CHRISTMASISLAND: Country = Country {
     name: "Christmas Island",
     iso_3166_1_a2: "CX",
     iso_3166_1_a3: "CXR",
 };
-pub const COUNTRY_COCOS_ISLANDS: Country = Country {
+const COUNTRY_COCOS_ISLANDS: Country = Country {
     name: "Cocos (Keeling) Islands",
     iso_3166_1_a2: "CC",
     iso_3166_1_a3: "CCK",
 };
-pub const COUNTRY_COLOMBIA: Country = Country {
+const COUNTRY_COLOMBIA: Country = Country {
     name: "Colombia",
     iso_3166_1_a2: "CO",
     iso_3166_1_a3: "COL",
 };
-pub const COUNTRY_COMOROS: Country = Country {
+const COUNTRY_COMOROS: Country = Country {
     name: "Comoros",
     iso_3166_1_a2: "KM",
     iso_3166_1_a3: "COM",
 };
-pub const COUNTRY_CONGO: Country = Country {
+const COUNTRY_CONGO: Country = Country {
     name: "Congo",
     iso_3166_1_a2: "CG",
     iso_3166_1_a3: "COG",
 };
-pub const COUNTRY_COOKISLANDS: Country = Country {
+const COUNTRY_COOKISLANDS: Country = Country {
     name: "Cook Islands",
     iso_3166_1_a2: "CK",
     iso_3166_1_a3: "COK",
 };
-pub const COUNTRY_COSTARICA: Country = Country {
+const COUNTRY_COSTARICA: Country = Country {
     name: "Costa Rica",
     iso_3166_1_a2: "CR",
     iso_3166_1_a3: "CRI",
 };
-pub const COUNTRY_CÔTEDIVOIRE: Country = Country {
+const COUNTRY_CÔTEDIVOIRE: Country = Country {
     name: "Côte d'Ivoire",
     iso_3166_1_a2: "CI",
     iso_3166_1_a3: "CIV",
 };
-pub const COUNTRY_CROATIA: Country = Country {
+const COUNTRY_CROATIA: Country = Country {
     name: "Croatia",
     iso_3166_1_a2: "HR",
     iso_3166_1_a3: "HRV",
 };
-pub const COUNTRY_CUBA: Country = Country {
+const COUNTRY_CUBA: Country = Country {
     name: "Cuba",
     iso_3166_1_a2: "CU",
     iso_3166_1_a3: "CUB",
 };
-pub const COUNTRY_CURAÇAO: Country = Country {
+const COUNTRY_CURAÇAO: Country = Country {
     name: "Curaçao",
     iso_3166_1_a2: "CW",
     iso_3166_1_a3: "CUW",
 };
-pub const COUNTRY_CYPRUS: Country = Country {
+const COUNTRY_CYPRUS: Country = Country {
     name: "Cyprus",
     iso_3166_1_a2: "CY",
     iso_3166_1_a3: "CYP",
 };
-pub const COUNTRY_CZECH: Country = Country {
+const COUNTRY_CZECH: Country = Country {
     name: "Czechia",
     iso_3166_1_a2: "CZ",
     iso_3166_1_a3: "CZE",
 };
-pub const COUNTRY_DENMARK: Country = Country {
+const COUNTRY_DENMARK: Country = Country {
     name: "Denmark",
     iso_3166_1_a2: "DK",
     iso_3166_1_a3: "DNK",
 };
-pub const COUNTRY_DJIBOUTI: Country = Country {
+const COUNTRY_DJIBOUTI: Country = Country {
     name: "Djibouti",
     iso_3166_1_a2: "DJ",
     iso_3166_1_a3: "DJI",
 };
-pub const COUNTRY_DOMINICA: Country = Country {
+const COUNTRY_DOMINICA: Country = Country {
     name: "Dominica",
     iso_3166_1_a2: "DM",
     iso_3166_1_a3: "DMA",
 };
-pub const COUNTRY_DOMINICANREPUBLIC: Country = Country {
+const COUNTRY_DOMINICANREPUBLIC: Country = Country {
     name: "Dominican Republic",
     iso_3166_1_a2: "DO",
     iso_3166_1_a3: "DOM",
 };
-pub const COUNTRY_ECUADOR: Country = Country {
+const COUNTRY_ECUADOR: Country = Country {
     name: "Ecuador",
     iso_3166_1_a2: "EC",
     iso_3166_1_a3: "ECU",
 };
-pub const COUNTRY_EGYPT: Country = Country {
+const COUNTRY_EGYPT: Country = Country {
     name: "Egypt",
     iso_3166_1_a2: "EG",
     iso_3166_1_a3: "EGY",
 };
-pub const COUNTRY_ELSALVADOR: Country = Country {
+const COUNTRY_ELSALVADOR: Country = Country {
     name: "El Salvador",
     iso_3166_1_a2: "SV",
     iso_3166_1_a3: "SLV",
 };
-pub const COUNTRY_EQUATORIALGUINEA: Country = Country {
+const COUNTRY_EQUATORIALGUINEA: Country = Country {
     name: "Equatorial Guinea",
     iso_3166_1_a2: "GQ",
     iso_3166_1_a3: "GNQ",
 };
-pub const COUNTRY_ERITREA: Country = Country {
+const COUNTRY_ERITREA: Country = Country {
     name: "Eritrea",
     iso_3166_1_a2: "ER",
     iso_3166_1_a3: "ERI",
 };
-pub const COUNTRY_ESTONIA: Country = Country {
+const COUNTRY_ESTONIA: Country = Country {
     name: "Estonia",
     iso_3166_1_a2: "EE",
     iso_3166_1_a3: "EST",
 };
-pub const COUNTRY_ESWATINI: Country = Country {
+const COUNTRY_ESWATINI: Country = Country {
     name: "Eswatini",
     iso_3166_1_a2: "SZ",
     iso_3166_1_a3: "SWZ",
 };
-pub const COUNTRY_ETHIOPIA: Country = Country {
+const COUNTRY_ETHIOPIA: Country = Country {
     name: "Ethiopia",
     iso_3166_1_a2: "ET",
     iso_3166_1_a3: "ETH",
 };
-pub const COUNTRY_FALKLANDISLANDS: Country = Country {
+const COUNTRY_FALKLANDISLANDS: Country = Country {
     name: "Falkland Islands (Malvinas)",
     iso_3166_1_a2: "FK",
     iso_3166_1_a3: "FLK",
 };
-pub const COUNTRY_FAROEISLANDS: Country = Country {
+const COUNTRY_FAROEISLANDS: Country = Country {
     name: "Faroe Islands",
     iso_3166_1_a2: "FO",
     iso_3166_1_a3: "FRO",
 };
-pub const COUNTRY_FIJI: Country = Country {
+const COUNTRY_FIJI: Country = Country {
     name: "Fiji",
     iso_3166_1_a2: "FJ",
     iso_3166_1_a3: "FJI",
 };
-pub const COUNTRY_FINLAND: Country = Country {
+const COUNTRY_FINLAND: Country = Country {
     name: "Finland",
     iso_3166_1_a2: "FI",
     iso_3166_1_a3: "FIN",
 };
-pub const COUNTRY_FRANCE: Country = Country {
+const COUNTRY_FRANCE: Country = Country {
     name: "France",
     iso_3166_1_a2: "FR",
     iso_3166_1_a3: "FRA",
 };
-pub const COUNTRY_FRENCHGUIANA: Country = Country {
+const COUNTRY_FRENCHGUIANA: Country = Country {
     name: "French Guiana",
     iso_3166_1_a2: "GF",
     iso_3166_1_a3: "GUF",
 };
-pub const COUNTRY_FRENCHPOLYNESIA: Country = Country {
+const COUNTRY_FRENCHPOLYNESIA: Country = Country {
     name: "French Polynesia",
     iso_3166_1_a2: "PF",
     iso_3166_1_a3: "PYF",
 };
-pub const COUNTRY_FRENCHSOUTHERNTERRITORIES: Country = Country {
+const COUNTRY_FRENCHSOUTHERNTERRITORIES: Country = Country {
     name: "French Southern Territories",
     iso_3166_1_a2: "TF",
     iso_3166_1_a3: "ATF",
 };
-pub const COUNTRY_GABON: Country = Country {
+const COUNTRY_GABON: Country = Country {
     name: "Gabon",
     iso_3166_1_a2: "GA",
     iso_3166_1_a3: "GAB",
 };
-pub const COUNTRY_GAMBIA: Country = Country {
+const COUNTRY_GAMBIA: Country = Country {
     name: "Gambia",
     iso_3166_1_a2: "GM",
     iso_3166_1_a3: "GMB",
 };
-pub const COUNTRY_GEORGIA: Country = Country {
+const COUNTRY_GEORGIA: Country = Country {
     name: "Georgia",
     iso_3166_1_a2: "GE",
     iso_3166_1_a3: "GEO",
 };
-pub const COUNTRY_GERMANY: Country = Country {
+const COUNTRY_GERMANY: Country = Country {
     name: "Germany",
     iso_3166_1_a2: "DE",
     iso_3166_1_a3: "DEU",
 };
-pub const COUNTRY_GHANA: Country = Country {
+const COUNTRY_GHANA: Country = Country {
     name: "Ghana",
     iso_3166_1_a2: "GH",
     iso_3166_1_a3: "GHA",
 };
-pub const COUNTRY_GIBRALTAR: Country = Country {
+const COUNTRY_GIBRALTAR: Country = Country {
     name: "Gibraltar",
     iso_3166_1_a2: "GI",
     iso_3166_1_a3: "GIB",
 };
-pub const COUNTRY_GREECE: Country = Country {
+const COUNTRY_GREECE: Country = Country {
     name: "Greece",
     iso_3166_1_a2: "GR",
     iso_3166_1_a3: "GRC",
 };
-pub const COUNTRY_GREENLAND: Country = Country {
+const COUNTRY_GREENLAND: Country = Country {
     name: "Greenland",
     iso_3166_1_a2: "GL",
     iso_3166_1_a3: "GRL",
 };
-pub const COUNTRY_GRENADA: Country = Country {
+const COUNTRY_GRENADA: Country = Country {
     name: "Grenada",
     iso_3166_1_a2: "GD",
     iso_3166_1_a3: "GRD",
 };
-pub const COUNTRY_GUADELOUPE: Country = Country {
+const COUNTRY_GUADELOUPE: Country = Country {
     name: "Guadeloupe",
     iso_3166_1_a2: "GP",
     iso_3166_1_a3: "GLP",
 };
-pub const COUNTRY_GUAM: Country = Country {
+const COUNTRY_GUAM: Country = Country {
     name: "Guam",
     iso_3166_1_a2: "GU",
     iso_3166_1_a3: "GUM",
 };
-pub const COUNTRY_GUATEMALA: Country = Country {
+const COUNTRY_GUATEMALA: Country = Country {
     name: "Guatemala",
     iso_3166_1_a2: "GT",
     iso_3166_1_a3: "GTM",
 };
-pub const COUNTRY_GUERNSEY: Country = Country {
+const COUNTRY_GUERNSEY: Country = Country {
     name: "Guernsey",
     iso_3166_1_a2: "GG",
     iso_3166_1_a3: "GGY",
 };
-pub const COUNTRY_GUINEA: Country = Country {
+const COUNTRY_GUINEA: Country = Country {
     name: "Guinea",
     iso_3166_1_a2: "GN",
     iso_3166_1_a3: "GIN",
 };
-pub const COUNTRY_GUINEABISSAU: Country = Country {
+const COUNTRY_GUINEABISSAU: Country = Country {
     name: "Guinea-Bissau",
     iso_3166_1_a2: "GW",
     iso_3166_1_a3: "GNB",
 };
-pub const COUNTRY_GUYANA: Country = Country {
+const COUNTRY_GUYANA: Country = Country {
     name: "Guyana",
     iso_3166_1_a2: "GY",
     iso_3166_1_a3: "GUY",
 };
-pub const COUNTRY_HAITI: Country = Country {
+const COUNTRY_HAITI: Country = Country {
     name: "Haiti",
     iso_3166_1_a2: "HT",
     iso_3166_1_a3: "HTI",
 };
-pub const COUNTRY_HEARDISLANDANDMCDONALDISLANDS: Country = Country {
+const COUNTRY_HEARDISLANDANDMCDONALDISLANDS: Country = Country {
     name: "Heard Island and McDonald Islands",
     iso_3166_1_a2: "HM",
     iso_3166_1_a3: "HMD",
 };
-pub const COUNTRY_HOLYSEE: Country = Country {
+const COUNTRY_HOLYSEE: Country = Country {
     name: "Holy See",
     iso_3166_1_a2: "VA",
     iso_3166_1_a3: "VAT",
 };
-pub const COUNTRY_HONDURAS: Country = Country {
+const COUNTRY_HONDURAS: Country = Country {
     name: "Honduras",
     iso_3166_1_a2: "HN",
     iso_3166_1_a3: "HND",
 };
-pub const COUNTRY_HONGKONG: Country = Country {
+const COUNTRY_HONGKONG: Country = Country {
     name: "Hong Kong",
     iso_3166_1_a2: "HK",
     iso_3166_1_a3: "HKG",
 };
-pub const COUNTRY_HUNGARY: Country = Country {
+const COUNTRY_HUNGARY: Country = Country {
     name: "Hungary",
     iso_3166_1_a2: "HU",
     iso_3166_1_a3: "HUN",
 };
-pub const COUNTRY_ICELAND: Country = Country {
+const COUNTRY_ICELAND: Country = Country {
     name: "Iceland",
     iso_3166_1_a2: "IS",
     iso_3166_1_a3: "ISL",
 };
-pub const COUNTRY_INDIA: Country = Country {
+const COUNTRY_INDIA: Country = Country {
     name: "India",
     iso_3166_1_a2: "IN",
     iso_3166_1_a3: "IND",
 };
-pub const COUNTRY_INDONESIA: Country = Country {
+const COUNTRY_INDONESIA: Country = Country {
     name: "Indonesia",
     iso_3166_1_a2: "ID",
     iso_3166_1_a3: "IDN",
 };
-pub const COUNTRY_IRAN: Country = Country {
+const COUNTRY_IRAN: Country = Country {
     name: "Iran (Islamic Republic of)",
     iso_3166_1_a2: "IR",
     iso_3166_1_a3: "IRN",
 };
-pub const COUNTRY_IRAQ: Country = Country {
+const COUNTRY_IRAQ: Country = Country {
     name: "Iraq",
     iso_3166_1_a2: "IQ",
     iso_3166_1_a3: "IRQ",
 };
-pub const COUNTRY_IRELAND: Country = Country {
+const COUNTRY_IRELAND: Country = Country {
     name: "Ireland",
     iso_3166_1_a2: "IE",
     iso_3166_1_a3: "IRL",
 };
-pub const COUNTRY_ISLEOFMAN: Country = Country {
+const COUNTRY_ISLEOFMAN: Country = Country {
     name: "Isle of Man",
     iso_3166_1_a2: "IM",
     iso_3166_1_a3: "IMN",
 };
-pub const COUNTRY_ISRAEL: Country = Country {
+const COUNTRY_ISRAEL: Country = Country {
     name: "Israel",
     iso_3166_1_a2: "IL",
     iso_3166_1_a3: "ISR",
 };
-pub const COUNTRY_ITALY: Country = Country {
+const COUNTRY_ITALY: Country = Country {
     name: "Italy",
     iso_3166_1_a2: "IT",
     iso_3166_1_a3: "ITA",
 };
-pub const COUNTRY_JAMAICA: Country = Country {
+const COUNTRY_JAMAICA: Country = Country {
     name: "Jamaica",
     iso_3166_1_a2: "JM",
     iso_3166_1_a3: "JAM",
 };
-pub const COUNTRY_JAPAN: Country = Country {
+const COUNTRY_JAPAN: Country = Country {
     name: "Japan",
     iso_3166_1_a2: "JP",
     iso_3166_1_a3: "JPN",
 };
-pub const COUNTRY_JERSEY: Country = Country {
+const COUNTRY_JERSEY: Country = Country {
     name: "Jersey",
     iso_3166_1_a2: "JE",
     iso_3166_1_a3: "JEY",
 };
-pub const COUNTRY_JORDAN: Country = Country {
+const COUNTRY_JORDAN: Country = Country {
     name: "Jordan",
     iso_3166_1_a2: "JO",
     iso_3166_1_a3: "JOR",
 };
-pub const COUNTRY_KAZAKHSTAN: Country = Country {
+const COUNTRY_KAZAKHSTAN: Country = Country {
     name: "Kazakhstan",
     iso_3166_1_a2: "KZ",
     iso_3166_1_a3: "KAZ",
 };
-pub const COUNTRY_KENYA: Country = Country {
+const COUNTRY_KENYA: Country = Country {
     name: "Kenya",
     iso_3166_1_a2: "KE",
     iso_3166_1_a3: "KEN",
 };
-pub const COUNTRY_KIRIBATI: Country = Country {
+const COUNTRY_KIRIBATI: Country = Country {
     name: "Kiribati",
     iso_3166_1_a2: "KI",
     iso_3166_1_a3: "KIR",
 };
-pub const COUNTRY_KOREA: Country = Country {
+const COUNTRY_KOREA: Country = Country {
     name: "Korea (Democratic People's Republic of)",
     iso_3166_1_a2: "KP",
     iso_3166_1_a3: "PRK",
 };
-pub const COUNTRY_KOREAREPUBLICOF: Country = Country {
+const COUNTRY_KOREAREPUBLICOF: Country = Country {
     name: "Korea, Republic of",
     iso_3166_1_a2: "KR",
     iso_3166_1_a3: "KOR",
 };
-pub const COUNTRY_KUWAIT: Country = Country {
+const COUNTRY_KUWAIT: Country = Country {
     name: "Kuwait",
     iso_3166_1_a2: "KW",
     iso_3166_1_a3: "KWT",
 };
-pub const COUNTRY_KYRGYZSTAN: Country = Country {
+const COUNTRY_KYRGYZSTAN: Country = Country {
     name: "Kyrgyzstan",
     iso_3166_1_a2: "KG",
     iso_3166_1_a3: "KGZ",
 };
-pub const COUNTRY_LAOPEOPLESDEMOCRATICREPUBLIC: Country = Country {
+const COUNTRY_LAOPEOPLESDEMOCRATICREPUBLIC: Country = Country {
     name: "Lao People's Democratic Republic",
     iso_3166_1_a2: "LA",
     iso_3166_1_a3: "LAO",
 };
-pub const COUNTRY_LATVIA: Country = Country {
+const COUNTRY_LATVIA: Country = Country {
     name: "Latvia",
     iso_3166_1_a2: "LV",
     iso_3166_1_a3: "LVA",
 };
-pub const COUNTRY_LEBANON: Country = Country {
+const COUNTRY_LEBANON: Country = Country {
     name: "Lebanon",
     iso_3166_1_a2: "LB",
     iso_3166_1_a3: "LBN",
 };
-pub const COUNTRY_LESOTHO: Country = Country {
+const COUNTRY_LESOTHO: Country = Country {
     name: "Lesotho",
     iso_3166_1_a2: "LS",
     iso_3166_1_a3: "LSO",
 };
-pub const COUNTRY_LIBERIA: Country = Country {
+const COUNTRY_LIBERIA: Country = Country {
     name: "Liberia",
     iso_3166_1_a2: "LR",
     iso_3166_1_a3: "LBR",
 };
-pub const COUNTRY_LIBYA: Country = Country {
+const COUNTRY_LIBYA: Country = Country {
     name: "Libya",
     iso_3166_1_a2: "LY",
     iso_3166_1_a3: "LBY",
 };
-pub const COUNTRY_LIECHTENSTEIN: Country = Country {
+const COUNTRY_LIECHTENSTEIN: Country = Country {
     name: "Liechtenstein",
     iso_3166_1_a2: "LI",
     iso_3166_1_a3: "LIE",
 };
-pub const COUNTRY_LITHUANIA: Country = Country {
+const COUNTRY_LITHUANIA: Country = Country {
     name: "Lithuania",
     iso_3166_1_a2: "LT",
     iso_3166_1_a3: "LTU",
 };
-pub const COUNTRY_LUXEMBOURG: Country = Country {
+const COUNTRY_LUXEMBOURG: Country = Country {
     name: "Luxembourg",
     iso_3166_1_a2: "LU",
     iso_3166_1_a3: "LUX",
 };
-pub const COUNTRY_MACAO: Country = Country {
+const COUNTRY_MACAO: Country = Country {
     name: "Macao",
     iso_3166_1_a2: "MO",
     iso_3166_1_a3: "MAC",
 };
-pub const COUNTRY_MADAGASCAR: Country = Country {
+const COUNTRY_MADAGASCAR: Country = Country {
     name: "Madagascar",
     iso_3166_1_a2: "MG",
     iso_3166_1_a3: "MDG",
 };
-pub const COUNTRY_MALAWI: Country = Country {
+const COUNTRY_MALAWI: Country = Country {
     name: "Malawi",
     iso_3166_1_a2: "MW",
     iso_3166_1_a3: "MWI",
 };
-pub const COUNTRY_MALAYSIA: Country = Country {
+const COUNTRY_MALAYSIA: Country = Country {
     name: "Malaysia",
     iso_3166_1_a2: "MY",
     iso_3166_1_a3: "MYS",
 };
-pub const COUNTRY_MALDIVES: Country = Country {
+const COUNTRY_MALDIVES: Country = Country {
     name: "Maldives",
     iso_3166_1_a2: "MV",
     iso_3166_1_a3: "MDV",
 };
-pub const COUNTRY_MALI: Country = Country {
+const COUNTRY_MALI: Country = Country {
     name: "Mali",
     iso_3166_1_a2: "ML",
     iso_3166_1_a3: "MLI",
 };
-pub const COUNTRY_MALTA: Country = Country {
+const COUNTRY_MALTA: Country = Country {
     name: "Malta",
     iso_3166_1_a2: "MT",
     iso_3166_1_a3: "MLT",
 };
-pub const COUNTRY_MARSHALLISLANDS: Country = Country {
+const COUNTRY_MARSHALLISLANDS: Country = Country {
     name: "Marshall Islands",
     iso_3166_1_a2: "MH",
     iso_3166_1_a3: "MHL",
 };
-pub const COUNTRY_MARTINIQUE: Country = Country {
+const COUNTRY_MARTINIQUE: Country = Country {
     name: "Martinique",
     iso_3166_1_a2: "MQ",
     iso_3166_1_a3: "MTQ",
 };
-pub const COUNTRY_MAURITANIA: Country = Country {
+const COUNTRY_MAURITANIA: Country = Country {
     name: "Mauritania",
     iso_3166_1_a2: "MR",
     iso_3166_1_a3: "MRT",
 };
-pub const COUNTRY_MAURITIUS: Country = Country {
+const COUNTRY_MAURITIUS: Country = Country {
     name: "Mauritius",
     iso_3166_1_a2: "MU",
     iso_3166_1_a3: "MUS",
 };
-pub const COUNTRY_MAYOTTE: Country = Country {
+const COUNTRY_MAYOTTE: Country = Country {
     name: "Mayotte",
     iso_3166_1_a2: "YT",
     iso_3166_1_a3: "MYT",
 };
-pub const COUNTRY_MEXICO: Country = Country {
+const COUNTRY_MEXICO: Country = Country {
     name: "Mexico",
     iso_3166_1_a2: "MX",
     iso_3166_1_a3: "MEX",
 };
-pub const COUNTRY_MICRONESIA: Country = Country {
+const COUNTRY_MICRONESIA: Country = Country {
     name: "Micronesia (Federated States of)",
     iso_3166_1_a2: "FM",
     iso_3166_1_a3: "FSM",
 };
-pub const COUNTRY_MOLDOVAREPUBLICOF: Country = Country {
+const COUNTRY_MOLDOVAREPUBLICOF: Country = Country {
     name: "Moldova, Republic of",
     iso_3166_1_a2: "MD",
     iso_3166_1_a3: "MDA",
 };
-pub const COUNTRY_MONACO: Country = Country {
+const COUNTRY_MONACO: Country = Country {
     name: "Monaco",
     iso_3166_1_a2: "MC",
     iso_3166_1_a3: "MCO",
 };
-pub const COUNTRY_MONGOLIA: Country = Country {
+const COUNTRY_MONGOLIA: Country = Country {
     name: "Mongolia",
     iso_3166_1_a2: "MN",
     iso_3166_1_a3: "MNG",
 };
-pub const COUNTRY_MONTENEGRO: Country = Country {
+const COUNTRY_MONTENEGRO: Country = Country {
     name: "Montenegro",
     iso_3166_1_a2: "ME",
     iso_3166_1_a3: "MNE",
 };
-pub const COUNTRY_MONTSERRAT: Country = Country {
+const COUNTRY_MONTSERRAT: Country = Country {
     name: "Montserrat",
     iso_3166_1_a2: "MS",
     iso_3166_1_a3: "MSR",
 };
-pub const COUNTRY_MOROCCO: Country = Country {
+const COUNTRY_MOROCCO: Country = Country {
     name: "Morocco",
     iso_3166_1_a2: "MA",
     iso_3166_1_a3: "MAR",
 };
-pub const COUNTRY_MOZAMBIQUE: Country = Country {
+const COUNTRY_MOZAMBIQUE: Country = Country {
     name: "Mozambique",
     iso_3166_1_a2: "MZ",
     iso_3166_1_a3: "MOZ",
 };
-pub const COUNTRY_MYANMAR: Country = Country {
+const COUNTRY_MYANMAR: Country = Country {
     name: "Myanmar",
     iso_3166_1_a2: "MM",
     iso_3166_1_a3: "MMR",
 };
-pub const COUNTRY_NAMIBIA: Country = Country {
+const COUNTRY_NAMIBIA: Country = Country {
     name: "Namibia",
     iso_3166_1_a2: "NA",
     iso_3166_1_a3: "NAM",
 };
-pub const COUNTRY_NAURU: Country = Country {
+const COUNTRY_NAURU: Country = Country {
     name: "Nauru",
     iso_3166_1_a2: "NR",
     iso_3166_1_a3: "NRU",
 };
-pub const COUNTRY_NEPAL: Country = Country {
+const COUNTRY_NEPAL: Country = Country {
     name: "Nepal",
     iso_3166_1_a2: "NP",
     iso_3166_1_a3: "NPL",
 };
-pub const COUNTRY_NETHERLANDS: Country = Country {
+const COUNTRY_NETHERLANDS: Country = Country {
     name: "Netherlands",
     iso_3166_1_a2: "NL",
     iso_3166_1_a3: "NLD",
 };
-pub const COUNTRY_NEWCALEDONIA: Country = Country {
+const COUNTRY_NEWCALEDONIA: Country = Country {
     name: "New Caledonia",
     iso_3166_1_a2: "NC",
     iso_3166_1_a3: "NCL",
 };
-pub const COUNTRY_NEWZEALAND: Country = Country {
+const COUNTRY_NEWZEALAND: Country = Country {
     name: "New Zealand",
     iso_3166_1_a2: "NZ",
     iso_3166_1_a3: "NZL",
 };
-pub const COUNTRY_NICARAGUA: Country = Country {
+const COUNTRY_NICARAGUA: Country = Country {
     name: "Nicaragua",
     iso_3166_1_a2: "NI",
     iso_3166_1_a3: "NIC",
 };
-pub const COUNTRY_NIGER: Country = Country {
+const COUNTRY_NIGER: Country = Country {
     name: "Niger",
     iso_3166_1_a2: "NE",
     iso_3166_1_a3: "NER",
 };
-pub const COUNTRY_NIGERIA: Country = Country {
+const COUNTRY_NIGERIA: Country = Country {
     name: "Nigeria",
     iso_3166_1_a2: "NG",
     iso_3166_1_a3: "NGA",
 };
-pub const COUNTRY_NIUE: Country = Country {
+const COUNTRY_NIUE: Country = Country {
     name: "Niue",
     iso_3166_1_a2: "NU",
     iso_3166_1_a3: "NIU",
 };
-pub const COUNTRY_NORFOLKISLAND: Country = Country {
+const COUNTRY_NORFOLKISLAND: Country = Country {
     name: "Norfolk Island",
     iso_3166_1_a2: "NF",
     iso_3166_1_a3: "NFK",
 };
-pub const COUNTRY_NORTHMACEDONIA: Country = Country {
+const COUNTRY_NORTHMACEDONIA: Country = Country {
     name: "North Macedonia",
     iso_3166_1_a2: "MK",
     iso_3166_1_a3: "MKD",
 };
-pub const COUNTRY_NORTHERNMARIANAISLANDS: Country = Country {
+const COUNTRY_NORTHERNMARIANAISLANDS: Country = Country {
     name: "Northern Mariana Islands",
     iso_3166_1_a2: "MP",
     iso_3166_1_a3: "MNP",
 };
-pub const COUNTRY_NORWAY: Country = Country {
+const COUNTRY_NORWAY: Country = Country {
     name: "Norway",
     iso_3166_1_a2: "NO",
     iso_3166_1_a3: "NOR",
 };
-pub const COUNTRY_OMAN: Country = Country {
+const COUNTRY_OMAN: Country = Country {
     name: "Oman",
     iso_3166_1_a2: "OM",
     iso_3166_1_a3: "OMN",
 };
-pub const COUNTRY_PAKISTAN: Country = Country {
+const COUNTRY_PAKISTAN: Country = Country {
     name: "Pakistan",
     iso_3166_1_a2: "PK",
     iso_3166_1_a3: "PAK",
 };
-pub const COUNTRY_PALAU: Country = Country {
+const COUNTRY_PALAU: Country = Country {
     name: "Palau",
     iso_3166_1_a2: "PW",
     iso_3166_1_a3: "PLW",
 };
-pub const COUNTRY_PALESTINESTATEOF: Country = Country {
+const COUNTRY_PALESTINESTATEOF: Country = Country {
     name: "Palestine, State of",
     iso_3166_1_a2: "PS",
     iso_3166_1_a3: "PSE",
 };
-pub const COUNTRY_PANAMA: Country = Country {
+const COUNTRY_PANAMA: Country = Country {
     name: "Panama",
     iso_3166_1_a2: "PA",
     iso_3166_1_a3: "PAN",
 };
-pub const COUNTRY_PAPUANEWGUINEA: Country = Country {
+const COUNTRY_PAPUANEWGUINEA: Country = Country {
     name: "Papua New Guinea",
     iso_3166_1_a2: "PG",
     iso_3166_1_a3: "PNG",
 };
-pub const COUNTRY_PARAGUAY: Country = Country {
+const COUNTRY_PARAGUAY: Country = Country {
     name: "Paraguay",
     iso_3166_1_a2: "PY",
     iso_3166_1_a3: "PRY",
 };
-pub const COUNTRY_PERU: Country = Country {
+const COUNTRY_PERU: Country = Country {
     name: "Peru",
     iso_3166_1_a2: "PE",
     iso_3166_1_a3: "PER",
 };
-pub const COUNTRY_PHILIPPINES: Country = Country {
+const COUNTRY_PHILIPPINES: Country = Country {
     name: "Philippines",
     iso_3166_1_a2: "PH",
     iso_3166_1_a3: "PHL",
 };
-pub const COUNTRY_PITCAIRN: Country = Country {
+const COUNTRY_PITCAIRN: Country = Country {
     name: "Pitcairn",
     iso_3166_1_a2: "PN",
     iso_3166_1_a3: "PCN",
 };
-pub const COUNTRY_POLAND: Country = Country {
+const COUNTRY_POLAND: Country = Country {
     name: "Poland",
     iso_3166_1_a2: "PL",
     iso_3166_1_a3: "POL",
 };
-pub const COUNTRY_PORTUGAL: Country = Country {
+const COUNTRY_PORTUGAL: Country = Country {
     name: "Portugal",
     iso_3166_1_a2: "PT",
     iso_3166_1_a3: "PRT",
 };
-pub const COUNTRY_PUERTORICO: Country = Country {
+const COUNTRY_PUERTORICO: Country = Country {
     name: "Puerto Rico",
     iso_3166_1_a2: "PR",
     iso_3166_1_a3: "PRI",
 };
-pub const COUNTRY_QATAR: Country = Country {
+const COUNTRY_QATAR: Country = Country {
     name: "Qatar",
     iso_3166_1_a2: "QA",
     iso_3166_1_a3: "QAT",
 };
-pub const COUNTRY_RÉUNION: Country = Country {
+const COUNTRY_RÉUNION: Country = Country {
     name: "Réunion",
     iso_3166_1_a2: "RE",
     iso_3166_1_a3: "REU",
 };
-pub const COUNTRY_ROMANIA: Country = Country {
+const COUNTRY_ROMANIA: Country = Country {
     name: "Romania",
     iso_3166_1_a2: "RO",
     iso_3166_1_a3: "ROU",
 };
-pub const COUNTRY_RUSSIANFEDERATION: Country = Country {
+const COUNTRY_RUSSIANFEDERATION: Country = Country {
     name: "Russian Federation",
     iso_3166_1_a2: "RU",
     iso_3166_1_a3: "RUS",
 };
-pub const COUNTRY_RWANDA: Country = Country {
+const COUNTRY_RWANDA: Country = Country {
     name: "Rwanda",
     iso_3166_1_a2: "RW",
     iso_3166_1_a3: "RWA",
 };
-pub const COUNTRY_SAINTBARTHÉLEMY: Country = Country {
+const COUNTRY_SAINTBARTHÉLEMY: Country = Country {
     name: "Saint Barthélemy",
     iso_3166_1_a2: "BL",
     iso_3166_1_a3: "BLM",
 };
-pub const COUNTRY_SAINTHELENAASCENSIONANDTRISTANDACUNHA: Country = Country {
+const COUNTRY_SAINTHELENAASCENSIONANDTRISTANDACUNHA: Country = Country {
     name: "Saint Helena, Ascension and Tristan da Cunha",
     iso_3166_1_a2: "SH",
     iso_3166_1_a3: "SHN",
 };
-pub const COUNTRY_SAINTKITTSANDNEVIS: Country = Country {
+const COUNTRY_SAINTKITTSANDNEVIS: Country = Country {
     name: "Saint Kitts and Nevis",
     iso_3166_1_a2: "KN",
     iso_3166_1_a3: "KNA",
 };
-pub const COUNTRY_SAINTLUCIA: Country = Country {
+const COUNTRY_SAINTLUCIA: Country = Country {
     name: "Saint Lucia",
     iso_3166_1_a2: "LC",
     iso_3166_1_a3: "LCA",
 };
-pub const COUNTRY_SAINTMARTIN: Country = Country {
+const COUNTRY_SAINTMARTIN: Country = Country {
     name: "Saint Martin (French part)",
     iso_3166_1_a2: "MF",
     iso_3166_1_a3: "MAF",
 };
-pub const COUNTRY_SAINTPIERREANDMIQUELON: Country = Country {
+const COUNTRY_SAINTPIERREANDMIQUELON: Country = Country {
     name: "Saint Pierre and Miquelon",
     iso_3166_1_a2: "PM",
     iso_3166_1_a3: "SPM",
 };
-pub const COUNTRY_SAINTVINCENTANDTHEGRENADINES: Country = Country {
+const COUNTRY_SAINTVINCENTANDTHEGRENADINES: Country = Country {
     name: "Saint Vincent and the Grenadines",
     iso_3166_1_a2: "VC",
     iso_3166_1_a3: "VCT",
 };
-pub const COUNTRY_SAMOA: Country = Country {
+const COUNTRY_SAMOA: Country = Country {
     name: "Samoa",
     iso_3166_1_a2: "WS",
     iso_3166_1_a3: "WSM",
 };
-pub const COUNTRY_SANMARINO: Country = Country {
+const COUNTRY_SANMARINO: Country = Country {
     name: "San Marino",
     iso_3166_1_a2: "SM",
     iso_3166_1_a3: "SMR",
 };
-pub const COUNTRY_SAOTOMEANDPRINCIPE: Country = Country {
+const COUNTRY_SAOTOMEANDPRINCIPE: Country = Country {
     name: "Sao Tome and Principe",
     iso_3166_1_a2: "ST",
     iso_3166_1_a3: "STP",
 };
-pub const COUNTRY_SAUDIARABIA: Country = Country {
+const COUNTRY_SAUDIARABIA: Country = Country {
     name: "Saudi Arabia",
     iso_3166_1_a2: "SA",
     iso_3166_1_a3: "SAU",
 };
-pub const COUNTRY_SENEGAL: Country = Country {
+const COUNTRY_SENEGAL: Country = Country {
     name: "Senegal",
     iso_3166_1_a2: "SN",
     iso_3166_1_a3: "SEN",
 };
-pub const COUNTRY_SERBIA: Country = Country {
+const COUNTRY_SERBIA: Country = Country {
     name: "Serbia",
     iso_3166_1_a2: "RS",
     iso_3166_1_a3: "SRB",
 };
-pub const COUNTRY_SEYCHELLES: Country = Country {
+const COUNTRY_SEYCHELLES: Country = Country {
     name: "Seychelles",
     iso_3166_1_a2: "SC",
     iso_3166_1_a3: "SYC",
 };
-pub const COUNTRY_SIERRALEONE: Country = Country {
+const COUNTRY_SIERRALEONE: Country = Country {
     name: "Sierra Leone",
     iso_3166_1_a2: "SL",
     iso_3166_1_a3: "SLE",
 };
-pub const COUNTRY_SINGAPORE: Country = Country {
+const COUNTRY_SINGAPORE: Country = Country {
     name: "Singapore",
     iso_3166_1_a2: "SG",
     iso_3166_1_a3: "SGP",
 };
-pub const COUNTRY_SINTMAARTEN: Country = Country {
+const COUNTRY_SINTMAARTEN: Country = Country {
     name: "Sint Maarten (Dutch part)",
     iso_3166_1_a2: "SX",
     iso_3166_1_a3: "SXM",
 };
-pub const COUNTRY_SLOVAKIA: Country = Country {
+const COUNTRY_SLOVAKIA: Country = Country {
     name: "Slovakia",
     iso_3166_1_a2: "SK",
     iso_3166_1_a3: "SVK",
 };
-pub const COUNTRY_SLOVENIA: Country = Country {
+const COUNTRY_SLOVENIA: Country = Country {
     name: "Slovenia",
     iso_3166_1_a2: "SI",
     iso_3166_1_a3: "SVN",
 };
-pub const COUNTRY_SOLOMONISLANDS: Country = Country {
+const COUNTRY_SOLOMONISLANDS: Country = Country {
     name: "Solomon Islands",
     iso_3166_1_a2: "SB",
     iso_3166_1_a3: "SLB",
 };
-pub const COUNTRY_SOMALIA: Country = Country {
+const COUNTRY_SOMALIA: Country = Country {
     name: "Somalia",
     iso_3166_1_a2: "SO",
     iso_3166_1_a3: "SOM",
 };
-pub const COUNTRY_SOUTHAFRICA: Country = Country {
+const COUNTRY_SOUTHAFRICA: Country = Country {
     name: "South Africa",
     iso_3166_1_a2: "ZA",
     iso_3166_1_a3: "ZAF",
 };
-pub const COUNTRY_SOUTHGEORGIAANDTHESOUTHSANDWICHISLANDS: Country = Country {
+const COUNTRY_SOUTHGEORGIAANDTHESOUTHSANDWICHISLANDS: Country = Country {
     name: "South Georgia and the South Sandwich Islands",
     iso_3166_1_a2: "GS",
     iso_3166_1_a3: "SGS",
 };
-pub const COUNTRY_SOUTHSUDAN: Country = Country {
+const COUNTRY_SOUTHSUDAN: Country = Country {
     name: "South Sudan",
     iso_3166_1_a2: "SS",
     iso_3166_1_a3: "SSD",
 };
-pub const COUNTRY_SPAIN: Country = Country {
+const COUNTRY_SPAIN: Country = Country {
     name: "Spain",
     iso_3166_1_a2: "ES",
     iso_3166_1_a3: "ESP",
 };
-pub const COUNTRY_SRILANKA: Country = Country {
+const COUNTRY_SRILANKA: Country = Country {
     name: "Sri Lanka",
     iso_3166_1_a2: "LK",
     iso_3166_1_a3: "LKA",
 };
-pub const COUNTRY_SUDAN: Country = Country {
+const COUNTRY_SUDAN: Country = Country {
     name: "Sudan",
     iso_3166_1_a2: "SD",
     iso_3166_1_a3: "SDN",
 };
-pub const COUNTRY_SURINAME: Country = Country {
+const COUNTRY_SURINAME: Country = Country {
     name: "Suriname",
     iso_3166_1_a2: "SR",
     iso_3166_1_a3: "SUR",
 };
-pub const COUNTRY_SVALBARDANDJANMAYEN: Country = Country {
+const COUNTRY_SVALBARDANDJANMAYEN: Country = Country {
     name: "Svalbard and Jan Mayen",
     iso_3166_1_a2: "SJ",
     iso_3166_1_a3: "SJM",
 };
-pub const COUNTRY_SWEDEN: Country = Country {
+const COUNTRY_SWEDEN: Country = Country {
     name: "Sweden",
     iso_3166_1_a2: "SE",
     iso_3166_1_a3: "SWE",
 };
-pub const COUNTRY_SWITZERLAND: Country = Country {
+const COUNTRY_SWITZERLAND: Country = Country {
     name: "Switzerland",
     iso_3166_1_a2: "CH",
     iso_3166_1_a3: "CHE",
 };
-pub const COUNTRY_SYRIANARABREPUBLIC: Country = Country {
+const COUNTRY_SYRIANARABREPUBLIC: Country = Country {
     name: "Syrian Arab Republic",
     iso_3166_1_a2: "SY",
     iso_3166_1_a3: "SYR",
 };
-pub const COUNTRY_TAIWANPROVINCEOFCHINA: Country = Country {
+const COUNTRY_TAIWANPROVINCEOFCHINA: Country = Country {
     name: "Taiwan, Province of China",
     iso_3166_1_a2: "TW",
     iso_3166_1_a3: "TWN",
 };
-pub const COUNTRY_TAJIKISTAN: Country = Country {
+const COUNTRY_TAJIKISTAN: Country = Country {
     name: "Tajikistan",
     iso_3166_1_a2: "TJ",
     iso_3166_1_a3: "TJK",
 };
-pub const COUNTRY_TANZANIAUNITEDREPUBLICOF: Country = Country {
+const COUNTRY_TANZANIAUNITEDREPUBLICOF: Country = Country {
     name: "Tanzania, United Republic of",
     iso_3166_1_a2: "TZ",
     iso_3166_1_a3: "TZA",
 };
-pub const COUNTRY_THAILAND: Country = Country {
+const COUNTRY_THAILAND: Country = Country {
     name: "Thailand",
     iso_3166_1_a2: "TH",
     iso_3166_1_a3: "THA",
 };
-pub const COUNTRY_TIMORLESTE: Country = Country {
+const COUNTRY_TIMORLESTE: Country = Country {
     name: "Timor-Leste",
     iso_3166_1_a2: "TL",
     iso_3166_1_a3: "TLS",
 };
-pub const COUNTRY_TOGO: Country = Country {
+const COUNTRY_TOGO: Country = Country {
     name: "Togo",
     iso_3166_1_a2: "TG",
     iso_3166_1_a3: "TGO",
 };
-pub const COUNTRY_TOKELAU: Country = Country {
+const COUNTRY_TOKELAU: Country = Country {
     name: "Tokelau",
     iso_3166_1_a2: "TK",
     iso_3166_1_a3: "TKL",
 };
-pub const COUNTRY_TONGA: Country = Country {
+const COUNTRY_TONGA: Country = Country {
     name: "Tonga",
     iso_3166_1_a2: "TO",
     iso_3166_1_a3: "TON",
 };
-pub const COUNTRY_TRINIDADANDTOBAGO: Country = Country {
+const COUNTRY_TRINIDADANDTOBAGO: Country = Country {
     name: "Trinidad and Tobago",
     iso_3166_1_a2: "TT",
     iso_3166_1_a3: "TTO",
 };
-pub const COUNTRY_TUNISIA: Country = Country {
+const COUNTRY_TUNISIA: Country = Country {
     name: "Tunisia",
     iso_3166_1_a2: "TN",
     iso_3166_1_a3: "TUN",
 };
-pub const COUNTRY_TURKEY: Country = Country {
+const COUNTRY_TURKEY: Country = Country {
     name: "Turkey",
     iso_3166_1_a2: "TR",
     iso_3166_1_a3: "TUR",
 };
-pub const COUNTRY_TURKMENISTAN: Country = Country {
+const COUNTRY_TURKMENISTAN: Country = Country {
     name: "Turkmenistan",
     iso_3166_1_a2: "TM",
     iso_3166_1_a3: "TKM",
 };
-pub const COUNTRY_TURKSANDCAICOSISLANDS: Country = Country {
+const COUNTRY_TURKSANDCAICOSISLANDS: Country = Country {
     name: "Turks and Caicos Islands",
     iso_3166_1_a2: "TC",
     iso_3166_1_a3: "TCA",
 };
-pub const COUNTRY_TUVALU: Country = Country {
+const COUNTRY_TUVALU: Country = Country {
     name: "Tuvalu",
     iso_3166_1_a2: "TV",
     iso_3166_1_a3: "TUV",
 };
-pub const COUNTRY_UGANDA: Country = Country {
+const COUNTRY_UGANDA: Country = Country {
     name: "Uganda",
     iso_3166_1_a2: "UG",
     iso_3166_1_a3: "UGA",
 };
-pub const COUNTRY_UKRAINE: Country = Country {
+const COUNTRY_UKRAINE: Country = Country {
     name: "Ukraine",
     iso_3166_1_a2: "UA",
     iso_3166_1_a3: "UKR",
 };
-pub const COUNTRY_UNITEDARABEMIRATES: Country = Country {
+const COUNTRY_UNITEDARABEMIRATES: Country = Country {
     name: "United Arab Emirates",
     iso_3166_1_a2: "AE",
     iso_3166_1_a3: "ARE",
 };
-pub const COUNTRY_UNITEDKINGDOMOFGREATBRITAINANDNORTHERNIRELAND: Country = Country {
+const COUNTRY_UNITEDKINGDOMOFGREATBRITAINANDNORTHERNIRELAND: Country = Country {
     name: "United Kingdom of Great Britain and Northern Ireland",
     iso_3166_1_a2: "GB",
     iso_3166_1_a3: "GBR",
 };
-pub const COUNTRY_UNITEDSTATESOFAMERICA: Country = Country {
+const COUNTRY_UNITEDSTATESOFAMERICA: Country = Country {
     name: "United States of America",
     iso_3166_1_a2: "US",
     iso_3166_1_a3: "USA",
 };
-pub const COUNTRY_UNITEDSTATESMINOROUTLYINGISLANDS: Country = Country {
+const COUNTRY_UNITEDSTATESMINOROUTLYINGISLANDS: Country = Country {
     name: "United States Minor Outlying Islands",
     iso_3166_1_a2: "UM",
     iso_3166_1_a3: "UMI",
 };
-pub const COUNTRY_URUGUAY: Country = Country {
+const COUNTRY_URUGUAY: Country = Country {
     name: "Uruguay",
     iso_3166_1_a2: "UY",
     iso_3166_1_a3: "URY",
 };
-pub const COUNTRY_UZBEKISTAN: Country = Country {
+const COUNTRY_UZBEKISTAN: Country = Country {
     name: "Uzbekistan",
     iso_3166_1_a2: "UZ",
     iso_3166_1_a3: "UZB",
 };
-pub const COUNTRY_VANUATU: Country = Country {
+const COUNTRY_VANUATU: Country = Country {
     name: "Vanuatu",
     iso_3166_1_a2: "VU",
     iso_3166_1_a3: "VUT",
 };
-pub const COUNTRY_VENEZUELA: Country = Country {
+const COUNTRY_VENEZUELA: Country = Country {
     name: "Venezuela (Bolivarian Republic of)",
     iso_3166_1_a2: "VE",
     iso_3166_1_a3: "VEN",
 };
-pub const COUNTRY_VIETNAM: Country = Country {
+const COUNTRY_VIETNAM: Country = Country {
     name: "Viet Nam",
     iso_3166_1_a2: "VN",
     iso_3166_1_a3: "VNM",
 };
-pub const COUNTRY_BRITISH_VIRGIN_ISLANDS: Country = Country {
+const COUNTRY_BRITISH_VIRGIN_ISLANDS: Country = Country {
     name: "Virgin Islands (British)",
     iso_3166_1_a2: "VG",
     iso_3166_1_a3: "VGB",
 };
-pub const COUNTRY_US_VIRGIN_ISLANDS: Country = Country {
+const COUNTRY_US_VIRGIN_ISLANDS: Country = Country {
     name: "Virgin Islands (U.S.)",
     iso_3166_1_a2: "VI",
     iso_3166_1_a3: "VIR",
 };
-pub const COUNTRY_WALLISANDFUTUNA: Country = Country {
+const COUNTRY_WALLISANDFUTUNA: Country = Country {
     name: "Wallis and Futuna",
     iso_3166_1_a2: "WF",
     iso_3166_1_a3: "WLF",
 };
-pub const COUNTRY_WESTERNSAHARA: Country = Country {
+const COUNTRY_WESTERNSAHARA: Country = Country {
     name: "Western Sahara",
     iso_3166_1_a2: "EH",
     iso_3166_1_a3: "ESH",
 };
-pub const COUNTRY_YEMEN: Country = Country {
+const COUNTRY_YEMEN: Country = Country {
     name: "Yemen",
     iso_3166_1_a2: "YE",
     iso_3166_1_a3: "YEM",
 };
-pub const COUNTRY_ZAMBIA: Country = Country {
+const COUNTRY_ZAMBIA: Country = Country {
     name: "Zambia",
     iso_3166_1_a2: "ZM",
     iso_3166_1_a3: "ZMB",
 };
-pub const COUNTRY_ZIMBABWE: Country = Country {
+const COUNTRY_ZIMBABWE: Country = Country {
     name: "Zimbabwe",
     iso_3166_1_a2: "ZW",
     iso_3166_1_a3: "ZWE",
@@ -1259,6 +1254,7 @@ pub const COUNTRY_ZIMBABWE: Country = Country {
 
 const COUNTRY_ALL_COUNT: usize = 248;
 
+/// A list of all countries known and supported by the library.
 pub const COUNTRY_ALL: [&Country; COUNTRY_ALL_COUNT] = [
     &COUNTRY_AFGHANISTAN,
     &COUNTRY_ALANDISLANDS,
@@ -1523,6 +1519,7 @@ impl std::hash::Hash for Country {
 }
 
 impl Country {
+    /// Finds a country by its two-letter ISO 3166-1 alpha-2 code.
     pub fn from_iso_3166_1_a2(iso_3166_1_a2: &str) -> Option<&'static Self> {
         COUNTRY_ALL
             .iter()
@@ -1530,6 +1527,7 @@ impl Country {
             .copied()
     }
 
+    /// Finds a country by its three-letter ISO 3166-1 alpha-3 code.
     pub fn from_iso_3166_1_a3(iso_3166_1_a3: &str) -> Option<&'static Self> {
         COUNTRY_ALL
             .iter()
@@ -1537,6 +1535,7 @@ impl Country {
             .copied()
     }
 
+    /// Finds a country by its full name.
     pub fn from_name(name: &str) -> Option<&'static Self> {
         COUNTRY_ALL
             .into_iter()

@@ -11,227 +11,227 @@ pub struct Language {
     pub iso_639_3: &'static str,
 }
 
-pub const LANG_ARABIC: Language = Language {
+const LANG_ARABIC: Language = Language {
     name: "arabic",
     iso_639_1: "ar",
     iso_639_3: "ara",
 };
-pub const LANG_BULGARIAN: Language = Language {
+const LANG_BULGARIAN: Language = Language {
     name: "bulgarian",
     iso_639_1: "bg",
     iso_639_3: "bul",
 };
-pub const LANG_CHINESE: Language = Language {
+const LANG_CHINESE: Language = Language {
     name: "chinese",
     iso_639_1: "zh",
     iso_639_3: "zho",
 };
-pub const LANG_CATALAN: Language = Language {
+const LANG_CATALAN: Language = Language {
     name: "catalan",
     iso_639_1: "ca",
     iso_639_3: "cat",
 };
-pub const LANG_CROATIAN: Language = Language {
+const LANG_CROATIAN: Language = Language {
     name: "croatian",
     iso_639_1: "hr",
     iso_639_3: "hrv",
 };
-pub const LANG_CZECH: Language = Language {
+const LANG_CZECH: Language = Language {
     name: "czech",
     iso_639_1: "cs",
     iso_639_3: "ces",
 };
-pub const LANG_DANISH: Language = Language {
+const LANG_DANISH: Language = Language {
     name: "danish",
     iso_639_1: "da",
     iso_639_3: "dan",
 };
-pub const LANG_DUTCH: Language = Language {
+const LANG_DUTCH: Language = Language {
     name: "dutch",
     iso_639_1: "nl",
     iso_639_3: "nld",
 };
-pub const LANG_ESTONIAN: Language = Language {
+const LANG_ESTONIAN: Language = Language {
     name: "estonian",
     iso_639_1: "et",
     iso_639_3: "est",
 };
-pub const LANG_ENGLISH: Language = Language {
+const LANG_ENGLISH: Language = Language {
     name: "english",
     iso_639_1: "en",
     iso_639_3: "eng",
 };
-pub const LANG_FRENCH: Language = Language {
+const LANG_FRENCH: Language = Language {
     name: "french",
     iso_639_1: "fr",
     iso_639_3: "fra",
 };
-pub const LANG_GERMAN: Language = Language {
+const LANG_GERMAN: Language = Language {
     name: "german",
     iso_639_1: "de",
     iso_639_3: "deu",
 };
-pub const LANG_GREEK: Language = Language {
+const LANG_GREEK: Language = Language {
     name: "greek",
     iso_639_1: "el",
     iso_639_3: "ell",
 };
-pub const LANG_HEBREW: Language = Language {
+const LANG_HEBREW: Language = Language {
     name: "hebrew",
     iso_639_1: "he",
     iso_639_3: "heb",
 };
-pub const LANG_HINDI: Language = Language {
+const LANG_HINDI: Language = Language {
     name: "hindi",
     iso_639_1: "hi",
     iso_639_3: "hin",
 };
-pub const LANG_HUNGARIAN: Language = Language {
+const LANG_HUNGARIAN: Language = Language {
     name: "hungarian",
     iso_639_1: "hu",
     iso_639_3: "hun",
 };
-pub const LANG_INDONESIAN: Language = Language {
+const LANG_INDONESIAN: Language = Language {
     name: "indonesian",
     iso_639_1: "id",
     iso_639_3: "ind",
 };
-pub const LANG_FINNISH: Language = Language {
+const LANG_FINNISH: Language = Language {
     name: "finnish",
     iso_639_1: "fi",
     iso_639_3: "fin",
 };
-pub const LANG_ICELANDIC: Language = Language {
+const LANG_ICELANDIC: Language = Language {
     name: "icelandic",
     iso_639_1: "is",
     iso_639_3: "isl",
 };
-pub const LANG_ITALIAN: Language = Language {
+const LANG_ITALIAN: Language = Language {
     name: "italian",
     iso_639_1: "it",
     iso_639_3: "ita",
 };
-pub const LANG_JAPANESE: Language = Language {
+const LANG_JAPANESE: Language = Language {
     name: "japanese",
     iso_639_1: "ja",
     iso_639_3: "jpn",
 };
-pub const LANG_KOREAN: Language = Language {
+const LANG_KOREAN: Language = Language {
     name: "korean",
     iso_639_1: "ko",
     iso_639_3: "kor",
 };
-pub const LANG_LATVIAN: Language = Language {
+const LANG_LATVIAN: Language = Language {
     name: "latvian",
     iso_639_1: "lv",
     iso_639_3: "lav",
 };
-pub const LANG_LITHUANIAN: Language = Language {
+const LANG_LITHUANIAN: Language = Language {
     name: "lithuanian",
     iso_639_1: "lt",
     iso_639_3: "lit",
 };
-pub const LANG_MACEDONIAN: Language = Language {
+const LANG_MACEDONIAN: Language = Language {
     name: "macedonian",
     iso_639_1: "mk",
     iso_639_3: "mkd",
 };
-pub const LANG_MALAY: Language = Language {
+const LANG_MALAY: Language = Language {
     name: "malay",
     iso_639_1: "ms",
     iso_639_3: "msa",
 };
-pub const LANG_MONGOLIAN: Language = Language {
+const LANG_MONGOLIAN: Language = Language {
     name: "mongolian",
     iso_639_1: "mn",
     iso_639_3: "mon",
 };
-pub const LANG_NORWEGIAN: Language = Language {
+const LANG_NORWEGIAN: Language = Language {
     name: "norwegian",
     iso_639_1: "no",
     iso_639_3: "nor",
 };
-pub const LANG_NORWEGIAN_BOKMAL: Language = Language {
+const LANG_NORWEGIAN_BOKMAL: Language = Language {
     name: "norwegian bokmål",
     iso_639_1: "nb",
     iso_639_3: "nob",
 };
-pub const LANG_POLISH: Language = Language {
+const LANG_POLISH: Language = Language {
     name: "polish",
     iso_639_1: "pl",
     iso_639_3: "pol",
 };
-pub const LANG_LATIN: Language = Language {
+const LANG_LATIN: Language = Language {
     name: "latin",
     iso_639_1: "la",
     iso_639_3: "lat",
 };
-pub const LANG_PERSIAN: Language = Language {
+const LANG_PERSIAN: Language = Language {
     name: "persian",
     iso_639_1: "fa",
     iso_639_3: "fas",
 };
-pub const LANG_PORTUGUESE: Language = Language {
+const LANG_PORTUGUESE: Language = Language {
     name: "portuguese",
     iso_639_1: "pt",
     iso_639_3: "por",
 };
-pub const LANG_RUSSIAN: Language = Language {
+const LANG_RUSSIAN: Language = Language {
     name: "russian",
     iso_639_1: "ru",
     iso_639_3: "rus",
 };
-pub const LANG_ROMANIAN: Language = Language {
+const LANG_ROMANIAN: Language = Language {
     name: "romanian",
     iso_639_1: "ro",
     iso_639_3: "ron",
 };
-pub const LANG_SERBIAN: Language = Language {
+const LANG_SERBIAN: Language = Language {
     name: "serbian",
     iso_639_1: "sr",
     iso_639_3: "srp",
 };
-pub const LANG_SLOVAK: Language = Language {
+const LANG_SLOVAK: Language = Language {
     name: "slovak",
     iso_639_1: "sk",
     iso_639_3: "slk",
 };
-pub const LANG_SLOVENIAN: Language = Language {
+const LANG_SLOVENIAN: Language = Language {
     name: "slovenian",
     iso_639_1: "sl",
     iso_639_3: "slv",
 };
-pub const LANG_SPANISH: Language = Language {
+const LANG_SPANISH: Language = Language {
     name: "spanish",
     iso_639_1: "es",
     iso_639_3: "spa",
 };
-pub const LANG_SWEDISH: Language = Language {
+const LANG_SWEDISH: Language = Language {
     name: "swedish",
     iso_639_1: "sv",
     iso_639_3: "swe",
 };
-pub const LANG_TELUGU: Language = Language {
+const LANG_TELUGU: Language = Language {
     name: "telugu",
     iso_639_1: "te",
     iso_639_3: "tel",
 };
-pub const LANG_THAI: Language = Language {
+const LANG_THAI: Language = Language {
     name: "thai",
     iso_639_1: "th",
     iso_639_3: "tha",
 };
-pub const LANG_TURKISH: Language = Language {
+const LANG_TURKISH: Language = Language {
     name: "turkish",
     iso_639_1: "tr",
     iso_639_3: "tur",
 };
-pub const LANG_UKRAINIAN: Language = Language {
+const LANG_UKRAINIAN: Language = Language {
     name: "ukrainian",
     iso_639_1: "uk",
     iso_639_3: "ukr",
 };
-pub const LANG_VIETNAMESE: Language = Language {
+const LANG_VIETNAMESE: Language = Language {
     name: "vietnamese",
     iso_639_1: "vi",
     iso_639_3: "vie",

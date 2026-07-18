@@ -1,4 +1,4 @@
-//! Verifies bounded ISO-BMFF and QuickTime container parsing.
+//! Verifies bounded ISO-BMFF detection and probing.
 
 use super::*;
 
@@ -57,9 +57,9 @@ fn retains_embedded_subtitle_codec_ids() {
     };
     let stream = subtitle_stream(&track);
 
-    assert!(stream.is_enabled);
+    assert!(stream.info.is_enabled);
     assert_eq!(
-        stream.language.map(|language| language.iso_639_1),
+        stream.info.language.map(|language| language.iso_639_1),
         Some("en")
     );
     assert_eq!(stream.codec.as_deref(), Some("tx3g"));

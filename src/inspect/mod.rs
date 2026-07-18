@@ -5,7 +5,6 @@ mod inspector;
 mod inspectors;
 mod token;
 mod token_identity;
-mod utils;
 
 pub use filename_metadata::FilenameMetadata;
 pub use inspector::Inspector;

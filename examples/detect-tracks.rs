@@ -1,7 +1,7 @@
 //! Lists video, audio, and embedded subtitle tracks in a media file.
 
 use mediakit::meta::fields::Language;
-use mediakit::probe::{AudioStream, SubtitleStream, VideoStream, probe};
+use mediakit::probe::{AudioStream, FileProber, StreamInfo, SubtitleStream, VideoStream};
 use std::env;
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -17,11 +17,14 @@ fn path_argument() -> Option<PathBuf> {
     }
 }
 
-fn append_flags(fields: &mut Vec<String>, is_enabled: bool, is_default: bool) {
-    if !is_enabled {
+fn append_stream_info(fields: &mut Vec<String>, info: &StreamInfo) {
+    if let Some(language) = info.language {
+        fields.push(format_language(language));
+    }
+    if !info.is_enabled {
         fields.push("disabled".to_owned());
     }
-    if is_default {
+    if info.is_default {
         fields.push("default".to_owned());
     }
 }
@@ -42,9 +45,6 @@ fn print_video_tracks(streams: &[VideoStream]) {
                 .as_ref()
                 .map_or_else(|| "unknown codec".to_owned(), ToString::to_string),
         ];
-        if let Some(language) = stream.language {
-            fields.push(format_language(language));
-        }
         if let Some(profile) = &stream.profile {
             fields.push(profile.to_string());
         }
@@ -60,7 +60,7 @@ fn print_video_tracks(streams: &[VideoStream]) {
         if let Some(dynamic_range) = &stream.dynamic_range {
             fields.push(dynamic_range.to_string());
         }
-        append_flags(&mut fields, stream.is_enabled, stream.is_default);
+        append_stream_info(&mut fields, &stream.info);
         println!("  [{index}] {}", fields.join(", "));
     }
 }
@@ -74,9 +74,6 @@ fn print_audio_tracks(streams: &[AudioStream]) {
                 .as_ref()
                 .map_or_else(|| "unknown codec".to_owned(), ToString::to_string),
         ];
-        if let Some(language) = stream.language {
-            fields.push(format_language(language));
-        }
         if let Some(profile) = &stream.profile {
             fields.push(profile.to_string());
         }
@@ -86,7 +83,7 @@ fn print_audio_tracks(streams: &[AudioStream]) {
         if let Some(bit_rate) = stream.bit_rate {
             fields.push(format!("{bit_rate} bps"));
         }
-        append_flags(&mut fields, stream.is_enabled, stream.is_default);
+        append_stream_info(&mut fields, &stream.info);
         println!("  [{index}] {}", fields.join(", "));
     }
 }
@@ -100,10 +97,7 @@ fn print_subtitle_tracks(streams: &[SubtitleStream]) {
                 .clone()
                 .unwrap_or_else(|| "unknown codec".to_owned()),
         ];
-        if let Some(language) = stream.language {
-            fields.push(format_language(language));
-        }
-        append_flags(&mut fields, stream.is_enabled, stream.is_default);
+        append_stream_info(&mut fields, &stream.info);
         println!("  [{index}] {}", fields.join(", "));
     }
 }
@@ -113,7 +107,7 @@ fn main() -> ExitCode {
         return ExitCode::FAILURE;
     };
 
-    let media = match probe(&path) {
+    let media = match FileProber::new(&path).and_then(|prober| prober.probe()) {
         Ok(media) => media,
         Err(error) => {
             eprintln!("Cannot probe {}: {error}", path.display());

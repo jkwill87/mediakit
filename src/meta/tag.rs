@@ -9,8 +9,8 @@ pub enum Tag {
     /// The media file format inferred from the filename extension.
     FileFormat(fields::MediaFormat),
 
-    /// The container format of the media file (without leading dot), e.g. `mkv`, `mp4`, `avi`.
-    Container(String),
+    /// The container format detected from the media file's content.
+    Container(fields::MediaFormat),
 
     /// The MIME type of the media file, e.g. `video/x-matroska`, `video/mp4`, `video/x-msvideo`.
     MimeType(String),
