@@ -11,9 +11,8 @@ impl FilenameInspector {
     /// **Preconditions:**
     /// - Requires the episode ordering to have been previously selected.
     /// - Requires the series title to have been previously selected.
-    /// - Requires the media type to have been previously selected.
     pub(super) fn inspect_episode_title(self) -> Self {
-        if self.media_type != MediaType::Television {
+        if self.media_type() != MediaType::Television {
             return self;
         }
         let last_ep_idx = match self

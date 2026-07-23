@@ -39,7 +39,7 @@ fn assert_stable_spans(inspector: &FilenameInspector) {
 fn python_mnamer_episode_fixture() {
     let inspector =
         FilenameInspector::new("ninja.turtles.s01e04.1080p.ac3.rargb.sample.mkv").analyze();
-    assert_eq!(inspector.media_type, MediaType::Television);
+    assert_eq!(inspector.media_type(), MediaType::Television);
     assert_value(&inspector, "title", "ninja turtles");
     assert_value(&inspector, "season_number", "1");
     assert_value(&inspector, "episode_number", "4");
@@ -53,7 +53,7 @@ fn python_mnamer_episode_fixture() {
 fn date_based_episode_fixture() {
     let inspector =
         FilenameInspector::new("Frontline.2024.04.23.1080p.WEB.H264-FLAME.mkv").analyze();
-    assert_eq!(inspector.media_type, MediaType::Television);
+    assert_eq!(inspector.media_type(), MediaType::Television);
     assert_value(&inspector, "title", "Frontline");
     assert_value(&inspector, "air_date", "2024-04-23");
     assert_stable_spans(&inspector);
@@ -65,7 +65,7 @@ fn alternate_title_and_ep_notation_fixture() {
         "Atlantas Missing and Murdered - The Lost Children S01EP03 (2020) (1080p).mp4",
     )
     .analyze();
-    assert_eq!(inspector.media_type, MediaType::Television);
+    assert_eq!(inspector.media_type(), MediaType::Television);
     assert_value(&inspector, "title", "Atlantas Missing and Murdered");
     assert_value(&inspector, "alternative_title", "The Lost Children");
     assert_value(&inspector, "season_number", "1");
@@ -80,7 +80,7 @@ fn technical_profile_fixture() {
         "Pulp.Fiction.1994.1080p.BluRay.DTS-HD.MA.5.1.H.264.High-ARCHiViST.mkv",
     )
     .analyze();
-    assert_eq!(inspector.media_type, MediaType::Movie);
+    assert_eq!(inspector.media_type(), MediaType::Movie);
     assert_value(&inspector, "title", "Pulp Fiction");
     assert_value(&inspector, "year", "1994");
     assert_value(&inspector, "audio_codec", "dts_hd");

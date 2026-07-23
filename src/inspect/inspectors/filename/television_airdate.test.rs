@@ -5,9 +5,7 @@ use crate::inspect::Inspector;
 use crate::meta::fields::AirDate;
 
 fn _detect_airdate(filename: &str) -> Option<AirDate> {
-    let mut inspector = FilenameInspector::new(filename);
-    inspector.media_type = MediaType::Television;
-    let inspector = inspector.inspect_television_air_date();
+    let inspector = FilenameInspector::new(filename).inspect_television_air_date();
     inspector.tokens.iter().find_map(|t| match &t.tag {
         Some(Tag::AirDate(d)) => Some(*d),
         _ => None,
@@ -66,7 +64,7 @@ fn dot_separated() {
 #[test]
 fn full_pipeline_detects_date_based_episode() {
     let inspector = FilenameInspector::new("the.colbert.show.2010.10.01.avi").analyze();
-    assert_eq!(inspector.media_type, MediaType::Television);
+    assert_eq!(inspector.media_type(), MediaType::Television);
     assert!(
         inspector
             .tags()

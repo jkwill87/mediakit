@@ -31,7 +31,7 @@
 //! )
 //! .analyze();
 //!
-//! assert_eq!(inspected.media_type(), &MediaType::Television);
+//! assert_eq!(inspected.media_type(), MediaType::Television);
 //! assert!(inspected.tags().into_iter().any(
 //!     |tag| matches!(tag, Tag::Title(title) if title == "The Bear")
 //! ));

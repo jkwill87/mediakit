@@ -58,7 +58,6 @@ pub struct FilenameInspector {
     path: PathBuf,
     filename: String,
     tokens: Vec<Token>,
-    media_type: MediaType,
     metadata: FilenameMetadata,
     media_type_hint: Option<MediaType>,
 }
@@ -111,7 +110,6 @@ impl FilenameInspector {
             path,
             filename,
             tokens,
-            media_type: MediaType::Unknown,
             metadata: FilenameMetadata::default(),
             media_type_hint: None,
         }
@@ -125,11 +123,6 @@ impl FilenameInspector {
     /// Returns the tokens parsed from the path string.
     pub fn tokens(&self) -> &[Token] {
         &self.tokens
-    }
-
-    /// Returns the detected media type.
-    pub const fn media_type(&self) -> &MediaType {
-        &self.media_type
     }
 
     /// Returns structured file-format and external-track metadata.
@@ -166,7 +159,6 @@ impl Inspector for FilenameInspector {
             .inspect_video_dynamic_range()
             .inpsect_video_resolution()
             .inspect_audio_language()
-            .inspect_media_type()
             .inspect_title()
             .inspect_premiere_year()
             .inspect_alternative_title()

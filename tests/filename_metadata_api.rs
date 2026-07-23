@@ -10,7 +10,7 @@ fn structured_external_track_metadata_is_public() {
 
     assert_eq!(inspector.filename(), "Rango.2011.pt-BR.2.forced.srt");
     assert!(!inspector.tokens().is_empty());
-    assert_eq!(inspector.media_type(), &MediaType::Movie);
+    assert_eq!(inspector.media_type(), MediaType::Movie);
     assert_eq!(metadata.format, Some(MediaFormat::Srt));
     assert_eq!(metadata.identity_stem(), Some("Rango.2011"));
     assert!(!metadata.has_generic_identity());

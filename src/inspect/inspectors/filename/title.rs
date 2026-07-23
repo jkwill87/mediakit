@@ -9,7 +9,6 @@ impl FilenameInspector {
     ///
     /// **Preconditions:**
     /// - Requires structural and technical metadata to have been previously selected.
-    /// - Requires the media type to have been previously selected.
     pub(super) fn inspect_title(self) -> Self {
         let mut tokens = self.tokens;
         let Some(range_start_idx) = tokens

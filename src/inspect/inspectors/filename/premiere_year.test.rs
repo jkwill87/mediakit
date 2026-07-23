@@ -7,7 +7,6 @@ fn _run_pipeline(filename: &str) -> FilenameInspector {
     FilenameInspector::new(filename)
         .inspect_file_format()
         .inspect_television_ordering()
-        .inspect_media_type()
         .inspect_title()
         .inspect_premiere_year()
 }

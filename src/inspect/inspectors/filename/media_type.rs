@@ -4,12 +4,13 @@ use super::FilenameInspector;
 use crate::meta::{Tag, fields::MediaType};
 
 impl FilenameInspector {
-    /// Selects the media type from an explicit hint or structural metadata.
+    /// Returns the media type selected from an explicit hint or structural metadata.
     ///
-    /// **Preconditions:**
-    /// - Requires the episode ordering and air date to have been previously selected.
-    pub(super) fn inspect_media_type(self) -> Self {
-        let media_type = self.media_type_hint.clone().unwrap_or_else(|| {
+    /// Automatic classification reflects the structural metadata currently present in the
+    /// inspector's tokens and is therefore intended to be read after
+    /// [`Inspector::analyze`](crate::inspect::Inspector::analyze).
+    pub fn media_type(&self) -> MediaType {
+        self.media_type_hint.clone().unwrap_or_else(|| {
             self.tokens
                 .iter()
                 .find(|token| {
@@ -21,8 +22,7 @@ impl FilenameInspector {
                     )
                 })
                 .map_or(MediaType::Movie, |_| MediaType::Television)
-        });
-        Self { media_type, ..self }
+        })
     }
 }
 

@@ -6,8 +6,7 @@ use crate::inspect::Inspector;
 fn _detect_media_type(filename: &str) -> MediaType {
     FilenameInspector::new(filename)
         .inspect_television_ordering()
-        .inspect_media_type()
-        .media_type
+        .media_type()
 }
 
 #[test]
@@ -62,7 +61,7 @@ fn explicit_movie_hint_overrides_episode_notation() {
     let media_type = FilenameInspector::new("The.Truman.Show.S01E01.mp4")
         .with_media_type_hint(MediaType::Movie)
         .analyze()
-        .media_type;
+        .media_type();
     assert_eq!(media_type, MediaType::Movie);
 }
 
@@ -71,6 +70,6 @@ fn explicit_television_hint_overrides_automatic_movie() {
     let media_type = FilenameInspector::new("It.2017.mp4")
         .with_media_type_hint(MediaType::Television)
         .analyze()
-        .media_type;
+        .media_type();
     assert_eq!(media_type, MediaType::Television);
 }

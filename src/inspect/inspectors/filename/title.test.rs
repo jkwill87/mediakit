@@ -6,7 +6,6 @@ fn _detect_title(filename: &str) -> String {
     let inspector = FilenameInspector::new(filename)
         .inspect_file_format()
         .inspect_television_ordering()
-        .inspect_media_type()
         .inspect_title();
     inspector
         .tokens
