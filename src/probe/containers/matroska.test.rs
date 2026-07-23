@@ -29,10 +29,27 @@ fn maps_media_info_codec_ids() {
         matroska_video_codec("V_MPEGH/ISO/HEVC"),
         Some(VideoCodec::H265)
     );
+    let subtitle_cases = [
+        ("S_TEXT/UTF8", SubtitleCodec::Srt),
+        ("S_TEXT/SSA", SubtitleCodec::Ssa),
+        ("S_TEXT/ASS", SubtitleCodec::Ass),
+        ("S_TEXT/WEBVTT", SubtitleCodec::WebVtt),
+        ("S_IMAGE/BMP", SubtitleCodec::Bitmap),
+        ("S_DVBSUB", SubtitleCodec::Dvb),
+        ("S_VOBSUB", SubtitleCodec::VobSub),
+        ("S_HDMV/PGS", SubtitleCodec::Pgs),
+        ("S_HDMV/TEXTST", SubtitleCodec::HdmvText),
+        ("S_KATE", SubtitleCodec::Kate),
+        ("S_ARIBSUB", SubtitleCodec::Arib),
+    ];
+    for (identifier, expected) in subtitle_cases {
+        assert_eq!(matroska_subtitle_codec(identifier), Some(expected));
+    }
+    assert_eq!(matroska_subtitle_codec("S_UNKNOWN"), None);
 }
 
 #[test]
-fn retains_embedded_subtitle_codec_ids_and_flags() {
+fn normalizes_embedded_subtitle_codecs_and_flags() {
     let track = Track {
         kind: 17,
         enabled: false,
@@ -50,7 +67,7 @@ fn retains_embedded_subtitle_codec_ids_and_flags() {
         stream.info.language.map(|language| language.iso_639_1),
         Some("en")
     );
-    assert_eq!(stream.codec.as_deref(), Some("S_TEXT/ASS"));
+    assert_eq!(stream.codec, Some(SubtitleCodec::Ass));
 }
 
 #[test]

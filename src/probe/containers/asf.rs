@@ -13,7 +13,7 @@ use super::binary::{invalid, read_region, u16_le, u32_le, u64_le};
 use super::windows_media::{BITMAP_INFO_COMPRESSION_BYTES, parse_bitmap_info, parse_wave_audio};
 use super::{MediaInfo, ProbeInput, pixel_dimension, video_codec, video_resolution};
 use crate::meta::fields::MediaFormat;
-use crate::probe::{AudioStream, StreamInfo, VideoStream};
+use crate::meta::streams::{AudioStream, StreamInfo, VideoStream};
 use std::io;
 use std::time::Duration;
 

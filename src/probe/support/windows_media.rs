@@ -7,7 +7,7 @@
 use super::audio_layout;
 use super::binary::{fourcc, i32_le, invalid, u16_le, u32_le};
 use crate::meta::fields::AudioCodec;
-use crate::probe::{AudioStream, StreamInfo};
+use crate::meta::streams::{AudioStream, StreamInfo};
 use std::io;
 
 /// Minimum encoded size of `WAVEFORMATEX` through `nBlockAlign`.

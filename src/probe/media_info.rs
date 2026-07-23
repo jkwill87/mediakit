@@ -1,8 +1,8 @@
 //! Defines ordered container and stream metadata from probing.
 
-use crate::meta::fields::{
-    AudioCodec, AudioLayout, AudioProfile, Language, MediaFormat, VideoCodec, VideoDynamicRange,
-    VideoProfile, VideoResolution,
+use crate::meta::{
+    fields::MediaFormat,
+    streams::{AudioStream, StreamInfo, SubtitleStream, VideoStream},
 };
 use std::time::Duration;
 
@@ -67,76 +67,6 @@ fn primary_stream<T>(streams: &[T], info: impl Fn(&T) -> &StreamInfo) -> Option<
         })
         .or_else(|| streams.iter().find(|stream| info(stream).is_enabled))
         .or_else(|| streams.first())
-}
-
-/// Container-independent metadata shared by every media stream.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[non_exhaustive]
-pub struct StreamInfo {
-    /// Whether the container marks the stream as enabled.
-    pub is_enabled: bool,
-    /// Whether the container marks the stream as the default.
-    pub is_default: bool,
-    /// The normalized language declared by the container.
-    pub language: Option<Language>,
-}
-
-impl Default for StreamInfo {
-    fn default() -> Self {
-        Self {
-            is_enabled: true,
-            is_default: false,
-            language: None,
-        }
-    }
-}
-
-/// Technical metadata for one audio stream.
-#[derive(Debug, Clone, PartialEq, Default)]
-#[non_exhaustive]
-pub struct AudioStream {
-    /// Container-independent stream metadata.
-    pub info: StreamInfo,
-    /// The detected audio codec.
-    pub codec: Option<AudioCodec>,
-    /// The detected codec profile.
-    pub profile: Option<AudioProfile>,
-    /// The detected channel layout.
-    pub layout: Option<AudioLayout>,
-    /// The average bit rate in bits per second.
-    pub bit_rate: Option<u32>,
-}
-
-/// Technical metadata for one video stream.
-#[derive(Debug, Clone, PartialEq, Default)]
-#[non_exhaustive]
-pub struct VideoStream {
-    /// Container-independent stream metadata.
-    pub info: StreamInfo,
-    /// The detected video codec.
-    pub codec: Option<VideoCodec>,
-    /// The detected codec profile.
-    pub profile: Option<VideoProfile>,
-    /// The coded width in pixels.
-    pub width: Option<u32>,
-    /// The coded height in pixels.
-    pub height: Option<u32>,
-    /// The normalized resolution category.
-    pub resolution: Option<VideoResolution>,
-    /// The frame rate in frames per second.
-    pub frame_rate: Option<f32>,
-    /// The detected video dynamic range.
-    pub dynamic_range: Option<VideoDynamicRange>,
-}
-
-/// Technical metadata for one embedded subtitle stream.
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
-#[non_exhaustive]
-pub struct SubtitleStream {
-    /// Container-independent stream metadata.
-    pub info: StreamInfo,
-    /// The container's subtitle codec identifier, such as `S_TEXT/UTF8`, `tx3g`, or `pgs`.
-    pub codec: Option<String>,
 }
 
 crate::unit_tests!("media_info.test.rs");

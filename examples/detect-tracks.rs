@@ -1,7 +1,10 @@
 //! Lists video, audio, and embedded subtitle tracks in a media file.
 
-use mediakit::meta::fields::Language;
-use mediakit::probe::{AudioStream, FileProber, StreamInfo, SubtitleStream, VideoStream};
+use mediakit::meta::{
+    fields::Language,
+    streams::{AudioStream, StreamInfo, SubtitleStream, VideoStream},
+};
+use mediakit::probe::FileProber;
 use std::env;
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -94,8 +97,8 @@ fn print_subtitle_tracks(streams: &[SubtitleStream]) {
         let mut fields = vec![
             stream
                 .codec
-                .clone()
-                .unwrap_or_else(|| "unknown codec".to_owned()),
+                .as_ref()
+                .map_or_else(|| "unknown codec".to_owned(), ToString::to_string),
         ];
         append_stream_info(&mut fields, &stream.info);
         println!("  [{index}] {}", fields.join(", "));

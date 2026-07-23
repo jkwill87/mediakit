@@ -1,7 +1,9 @@
 //! Normalizes media identifiers and technical fields shared by container families.
 
 use super::FOURCC_BYTES;
-use crate::meta::fields::{AudioCodec, AudioLayout, VideoCodec, VideoProfile, VideoResolution};
+use crate::meta::fields::{
+    AudioCodec, AudioLayout, SubtitleCodec, VideoCodec, VideoProfile, VideoResolution,
+};
 
 /// Windows speaker-mask bit for the low-frequency-effects channel.
 const SPEAKER_LOW_FREQUENCY: u32 = 0x0000_0008;
@@ -63,14 +65,6 @@ const HEVC_PROFILE_MAIN: u8 = 1;
 const HEVC_PROFILE_MAIN_10: u8 = 2;
 /// Bit depth above which an HEVC stream is treated as Main 10.
 const HEVC_MAIN_10_MIN_BIT_DEPTH: u8 = 8;
-
-pub(in crate::probe) fn fourcc_string(value: &[u8; FOURCC_BYTES]) -> Option<String> {
-    let value = std::str::from_utf8(value)
-        .ok()?
-        .trim_matches(char::from(0))
-        .trim();
-    (!value.is_empty()).then(|| value.to_owned())
-}
 
 /// Converts a channel count and optional Windows speaker mask into the library's `full.sub.height`
 /// representation.
@@ -196,6 +190,21 @@ pub(in crate::probe) const fn audio_codec(fourcc: &[u8; FOURCC_BYTES]) -> Option
         b".mp3" | b"MP3 " => Some(AudioCodec::Mp3),
         b"lpcm" | b"LPCM" => Some(AudioCodec::Lpcm),
         b"sowt" | b"twos" | b"raw " | b"in24" | b"in32" => Some(AudioCodec::Pcm),
+        _ => None,
+    }
+}
+
+/// Maps subtitle sample-entry FourCC values to a normalized codec.
+pub(in crate::probe) const fn subtitle_codec(fourcc: &[u8; FOURCC_BYTES]) -> Option<SubtitleCodec> {
+    match fourcc {
+        b"UTF8" => Some(SubtitleCodec::Srt),
+        b"tx3g" | b"TX3G" => Some(SubtitleCodec::TimedText),
+        b"text" | b"TEXT" | b"sbtt" | b"SBTT" | b"stxt" | b"STXT" => Some(SubtitleCodec::PlainText),
+        b"stpp" | b"STPP" => Some(SubtitleCodec::Ttml),
+        b"wvtt" | b"WVTT" => Some(SubtitleCodec::WebVtt),
+        b"c608" | b"C608" => Some(SubtitleCodec::Cea608),
+        b"c708" | b"C708" => Some(SubtitleCodec::Cea708),
+        b"STGS" | b"stgs" => Some(SubtitleCodec::SubtitleGraphics),
         _ => None,
     }
 }

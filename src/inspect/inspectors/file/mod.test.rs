@@ -2,7 +2,7 @@
 
 use super::*;
 use crate::meta::fields::{
-    AudioCodec, MediaFormat, VideoCodec, VideoProfile, VideoResolution,
+    AudioCodec, MediaFormat, SubtitleCodec, VideoCodec, VideoProfile, VideoResolution,
 };
 use crate::probe::FileProber;
 use std::fs;
@@ -396,16 +396,21 @@ fn file_prober_reports_exact_format_for_every_container_subtype() {
 #[test]
 fn file_prober_enumerates_streams_for_every_supported_container() {
     for (extension, data, subtitle_codec, subtitle_language) in [
-        ("mp4", mp4_fixture(), Some("tx3g"), Some("en")),
+        (
+            "mp4",
+            mp4_fixture(),
+            Some(SubtitleCodec::TimedText),
+            Some("en"),
+        ),
         (
             "mkv",
             matroska_fixture(),
-            Some("S_TEXT/UTF8"),
+            Some(SubtitleCodec::Srt),
             Some("es"),
         ),
-        ("avi", avi_fixture(), Some("UTF8"), None),
+        ("avi", avi_fixture(), Some(SubtitleCodec::Srt), None),
         ("wmv", asf_fixture(), None, None),
-        ("ts", ts_fixture(), Some("pgs"), None),
+        ("ts", ts_fixture(), Some(SubtitleCodec::Pgs), None),
     ] {
         let fixture = Fixture::new(extension, &data);
         let info = FileProber::new(&fixture.path).unwrap().probe().unwrap();
@@ -414,7 +419,7 @@ fn file_prober_enumerates_streams_for_every_supported_container() {
         assert_eq!(
             info.subtitle_streams
                 .first()
-                .and_then(|stream| stream.codec.as_deref()),
+                .and_then(|stream| stream.codec.clone()),
             subtitle_codec,
             "{extension}"
         );

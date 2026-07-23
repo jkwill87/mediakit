@@ -1,7 +1,7 @@
 //! Verifies container detection and probe error handling.
 
 use super::*;
-use crate::meta::fields::{AudioCodec, MediaFormat, VideoCodec};
+use crate::meta::fields::{AudioCodec, MediaFormat, SubtitleCodec, VideoCodec};
 use std::fs;
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -80,7 +80,10 @@ fn file_prober_enumerates_transport_stream_tracks() {
         info.audio_streams[0].codec,
         Some(AudioCodec::DolbyDigitalPlus)
     );
-    assert_eq!(info.subtitle_streams[0].codec.as_deref(), Some("pgs"));
+    assert_eq!(
+        info.subtitle_streams[0].codec,
+        Some(SubtitleCodec::Pgs)
+    );
 }
 
 #[test]

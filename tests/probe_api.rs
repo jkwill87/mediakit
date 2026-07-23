@@ -1,7 +1,10 @@
 //! Verifies the public container-probing contract.
 
-use mediakit::meta::fields::{Language, MediaFormat};
-use mediakit::probe::{FileProber, MediaInfo, ProbeError, StreamInfo, SubtitleStream};
+use mediakit::meta::{
+    fields::{Language, MediaFormat, SubtitleCodec},
+    streams::{AudioStream, StreamInfo, SubtitleStream, VideoStream},
+};
+use mediakit::probe::{FileProber, MediaInfo, ProbeError};
 use std::fs;
 
 #[test]
@@ -26,17 +29,23 @@ fn file_prober_api_is_available_to_external_callers() {
 
 #[test]
 fn embedded_subtitle_stream_type_is_public() {
+    fn assert_audio_type(_: AudioStream) {}
     fn assert_language_type(_: Option<Language>) {}
     fn assert_info_type(_: StreamInfo) {}
+    fn assert_codec_type(_: Option<SubtitleCodec>) {}
+    fn assert_video_type(_: VideoStream) {}
 
     let stream = SubtitleStream::default();
 
+    assert_audio_type(AudioStream::default());
     assert!(stream.info.is_enabled);
     assert!(!stream.info.is_default);
     assert_language_type(stream.info.language);
     assert_info_type(stream.info);
+    assert_codec_type(stream.codec.clone());
     assert_eq!(stream.info.language, None);
     assert_eq!(stream.codec, None);
+    assert_video_type(VideoStream::default());
 }
 
 #[test]

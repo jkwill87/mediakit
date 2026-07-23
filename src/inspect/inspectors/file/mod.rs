@@ -1,8 +1,8 @@
 //! Inspects filesystem properties and container content for media metadata.
 
+mod container;
 mod file_format;
 mod file_size;
-mod media_content;
 mod mime_type;
 
 use crate::inspect::Inspector;
@@ -44,7 +44,7 @@ impl Inspector for FileInspector {
         self.inspect_file_format()
             .inspect_mime_type()
             .inspect_file_size()
-            .inspect_media_content()
+            .inspect_container()
     }
 
     fn tags(&self) -> Vec<&Tag> {

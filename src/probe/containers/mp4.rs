@@ -11,11 +11,12 @@
 
 use super::binary::{checked_end, fourcc, invalid, read_region, u16_be, u32_be, u64_be};
 use super::{
-    MediaInfo, ProbeInput, audio_codec, audio_layout, avc_profile, fourcc_string, hevc_profile,
-    pixel_dimension, video_codec, video_resolution,
+    MediaInfo, ProbeInput, audio_codec, audio_layout, avc_profile, hevc_profile, pixel_dimension,
+    subtitle_codec, video_codec, video_resolution,
 };
 use crate::meta::fields::{AudioProfile, Language, MediaFormat, VideoDynamicRange};
-use crate::probe::{AudioStream, ProbeError, StreamInfo, SubtitleStream, VideoStream};
+use crate::meta::streams::{AudioStream, StreamInfo, SubtitleStream, VideoStream};
+use crate::probe::ProbeError;
 use std::io::{self, Read, Seek, SeekFrom};
 use std::time::Duration;
 
@@ -452,7 +453,7 @@ fn subtitle_stream(track: &Track) -> SubtitleStream {
             language: track.language,
             ..StreamInfo::default()
         },
-        codec: track.codec.as_ref().and_then(fourcc_string),
+        codec: track.codec.as_ref().and_then(subtitle_codec),
     }
 }
 

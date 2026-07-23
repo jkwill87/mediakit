@@ -1,9 +1,104 @@
-//! Probes supported media containers for bounded stream metadata.
+//! Bounded, content-derived metadata from supported media containers.
 //!
-//! Each built-in probe reads only the structural metadata needed to populate [`MediaInfo`]:
-//! container headers, stream descriptions, and timing tables. Media payloads are never decoded.
-//! Format implementations live under `containers`, while reusable byte readers and cross-container
-//! media normalization live under `support`.
+//! Probing opens a file, identifies its container from structural signatures, and reads only the
+//! headers, stream descriptions, and timing tables needed to build [`MediaInfo`]. Media payloads
+//! are never decoded.
+//!
+//! Use this module when every embedded stream, container order, or typed failures matter. For a
+//! best-effort sequence of display-oriented [`Tag`](crate::meta::Tag) values, see
+//! [`crate::inspect::FileInspector`].
+//!
+//! # Basic workflow
+//!
+//! [`FileProber::new`] opens the path and detects a supported container. [`FileProber::probe`] then
+//! consumes the prepared prober and parses its metadata.
+//!
+//! ```no_run
+//! use mediakit::probe::FileProber;
+//!
+//! let media = FileProber::new("episode.mkv")?.probe()?;
+//!
+//! println!("container: {}", media.container);
+//! if let Some(duration) = media.duration {
+//!     println!("duration: {:.3}s", duration.as_secs_f64());
+//! }
+//! for (index, stream) in media.audio_streams.iter().enumerate() {
+//!     println!("audio[{index}]: {stream:#?}");
+//! }
+//! # Ok::<(), mediakit::probe::ProbeError>(())
+//! ```
+//!
+//! Container detection is based on file content, not the filename extension. The normalized result
+//! is stored in [`MediaInfo::container`].
+//!
+//! # Supported containers
+//!
+//! The built-in probes recognize these content families:
+//!
+//! | Family | Reported [`MediaFormat`](crate::meta::fields::MediaFormat) |
+//! | --- | --- |
+//! | Matroska / WebM | [`Mkv`](crate::meta::fields::MediaFormat::Mkv), [`Webm`](crate::meta::fields::MediaFormat::Webm) |
+//! | ISO base media / QuickTime | [`Mp4`](crate::meta::fields::MediaFormat::Mp4), [`Mov`](crate::meta::fields::MediaFormat::Mov) |
+//! | Audio Video Interleave | [`Avi`](crate::meta::fields::MediaFormat::Avi) |
+//! | MPEG transport stream | [`Ts`](crate::meta::fields::MediaFormat::Ts), [`M2ts`](crate::meta::fields::MediaFormat::M2ts) |
+//! | Advanced Systems Format | [`Wmv`](crate::meta::fields::MediaFormat::Wmv) |
+//!
+//! A format appearing in [`crate::meta::fields::MediaFormat::ALL`] does not necessarily imply a
+//! content probe. That list also includes extension-recognized external subtitle and multimedia
+//! formats.
+//!
+//! # Result model
+//!
+//! [`MediaInfo`] preserves stream order separately for [`MediaInfo::video_streams`],
+//! [`MediaInfo::audio_streams`], and [`MediaInfo::subtitle_streams`].
+//!
+//! | Type | Container-specific metadata |
+//! | --- | --- |
+//! | [`VideoStream`](crate::meta::streams::VideoStream) | Codec and profile, dimensions, normalized resolution, frame rate, and dynamic range |
+//! | [`AudioStream`](crate::meta::streams::AudioStream) | Codec and profile, channel layout, and bit rate |
+//! | [`SubtitleStream`](crate::meta::streams::SubtitleStream) | Normalized subtitle codec |
+//!
+//! Every stream embeds [`StreamInfo`](crate::meta::streams::StreamInfo) for enabled/default flags and normalized
+//! [`Language`](crate::meta::fields::Language). Fields are optional when a container omits them or
+//! the bounded parser does not establish them.
+//!
+//! The convenience methods [`MediaInfo::primary_video_stream`],
+//! [`MediaInfo::primary_audio_stream`], and [`MediaInfo::primary_subtitle_stream`] choose an enabled
+//! default stream first, then any enabled stream, then the first stream in container order. The
+//! ordered vectors remain available when an application needs a different policy.
+//!
+//! # Error handling
+//!
+//! [`ProbeError`] distinguishes unsupported content, malformed supported content, and file I/O:
+//!
+//! ```no_run
+//! use mediakit::probe::{FileProber, ProbeError};
+//!
+//! let result = FileProber::new("movie.mkv").and_then(FileProber::probe);
+//! match result {
+//!     Ok(media) => println!("detected {}", media.container),
+//!     Err(ProbeError::UnsupportedFormat) => println!("unsupported container"),
+//!     Err(ProbeError::InvalidData { format, message }) => {
+//!         println!("invalid {format} data: {message}");
+//!     }
+//!     Err(ProbeError::Io(error)) => eprintln!("cannot read file: {error}"),
+//!     Err(error) => eprintln!("future probe error: {error}"),
+//! }
+//! ```
+//!
+//! The final wildcard keeps the match forward-compatible because [`ProbeError`] is marked
+//! `#[non_exhaustive]`.
+//!
+//! # Relationship to inspection
+//!
+//! [`crate::inspect::FileInspector`] uses this API internally but intentionally changes the
+//! contract: probing failures are ignored, only preferred audio/video streams are converted to
+//! tags, and extension-derived baseline metadata is retained. Call [`FileProber`] directly when
+//! those tradeoffs are not appropriate.
+//!
+//! Format implementations live under the private `containers` namespace, while reusable byte
+//! readers and cross-container normalization live under private `support`. The public API remains
+//! container-independent through [`MediaInfo`] and [`crate::meta::streams`].
 
 mod containers;
 mod detected_container;
@@ -13,7 +108,7 @@ mod media_info;
 mod support;
 
 pub use error::ProbeError;
-pub use media_info::{AudioStream, MediaInfo, StreamInfo, SubtitleStream, VideoStream};
+pub use media_info::MediaInfo;
 
 use detected_container::DetectedContainer;
 use input::ProbeInput;

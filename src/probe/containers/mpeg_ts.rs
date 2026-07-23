@@ -13,8 +13,10 @@
 
 use super::binary::{invalid, read_region};
 use super::{MediaInfo, ProbeInput};
-use crate::meta::fields::{AudioCodec, Language, MediaFormat, VideoCodec};
-use crate::probe::{AudioStream, StreamInfo, SubtitleStream, VideoStream};
+use crate::meta::{
+    fields::{AudioCodec, Language, MediaFormat, SubtitleCodec, VideoCodec},
+    streams::{AudioStream, StreamInfo, SubtitleStream, VideoStream},
+};
 use std::io;
 
 /// Maximum transport-stream prefix scanned for PAT and PMT sections (8 MiB).
@@ -447,7 +449,7 @@ fn parse_pmt(
                     language,
                     ..StreamInfo::default()
                 },
-                codec: Some(codec.to_owned()),
+                codec: Some(codec),
                 ..SubtitleStream::default()
             });
         }
@@ -488,17 +490,17 @@ fn audio_stream_type(stream_type: u8, descriptors: &[u8]) -> Option<AudioCodec> 
     }
 }
 
-fn subtitle_stream_type(stream_type: u8, descriptors: &[u8]) -> Option<&'static str> {
+fn subtitle_stream_type(stream_type: u8, descriptors: &[u8]) -> Option<SubtitleCodec> {
     // 0x90 and 0x92 are Blu-ray private assignments. DVB subtitle and teletext streams use generic
     // private PES type 0x06 and are distinguished by descriptor tags 0x59 and 0x56 respectively.
     match stream_type {
-        STREAM_TYPE_PGS => Some("pgs"),
-        STREAM_TYPE_TEXT_SUBTITLE => Some("text"),
+        STREAM_TYPE_PGS => Some(SubtitleCodec::Pgs),
+        STREAM_TYPE_TEXT_SUBTITLE => Some(SubtitleCodec::HdmvText),
         STREAM_TYPE_PRIVATE_PES if has_descriptor(descriptors, DESCRIPTOR_SUBTITLING) => {
-            Some("dvb_subtitle")
+            Some(SubtitleCodec::Dvb)
         }
         STREAM_TYPE_PRIVATE_PES if has_descriptor(descriptors, DESCRIPTOR_TELETEXT) => {
-            Some("teletext")
+            Some(SubtitleCodec::Teletext)
         }
         _ => None,
     }

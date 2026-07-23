@@ -10,7 +10,7 @@ pub(super) mod mp4;
 pub(super) mod mpeg_ts;
 
 use super::support::{
-    audio_codec, audio_layout, avc_profile, binary, fourcc_string, hevc_profile, pixel_dimension,
+    audio_codec, audio_layout, avc_profile, binary, hevc_profile, pixel_dimension, subtitle_codec,
     video_codec, video_resolution, windows_media,
 };
 use super::{MediaInfo, ProbeInput};

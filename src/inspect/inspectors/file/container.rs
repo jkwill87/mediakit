@@ -1,11 +1,14 @@
 //! Probes media containers for stream metadata tags.
 
 use super::FileInspector;
-use crate::meta::Tag;
-use crate::probe::{AudioStream, FileProber, MediaInfo, VideoStream};
+use crate::meta::{
+    Tag,
+    streams::{AudioStream, VideoStream},
+};
+use crate::probe::{FileProber, MediaInfo};
 
 impl FileInspector {
-    pub(super) fn inspect_media_content(mut self) -> Self {
+    pub(super) fn inspect_container(mut self) -> Self {
         if !self.inspect_content {
             return self;
         }

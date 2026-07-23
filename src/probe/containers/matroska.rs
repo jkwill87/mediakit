@@ -13,8 +13,11 @@ use super::{
     MediaInfo, ProbeInput, audio_layout, avc_profile, hevc_profile, pixel_dimension,
     video_resolution,
 };
-use crate::meta::fields::{AudioCodec, AudioProfile, Language, MediaFormat, VideoCodec};
-use crate::probe::{AudioStream, ProbeError, StreamInfo, SubtitleStream, VideoStream};
+use crate::meta::{
+    fields::{AudioCodec, AudioProfile, Language, MediaFormat, SubtitleCodec, VideoCodec},
+    streams::{AudioStream, StreamInfo, SubtitleStream, VideoStream},
+};
+use crate::probe::ProbeError;
 use std::fs::File;
 use std::io::{self, Read, Seek, SeekFrom};
 use std::time::Duration;
@@ -372,7 +375,7 @@ fn subtitle_stream(track: &Track) -> SubtitleStream {
             is_default: track.default,
             language: track_language(track),
         },
-        codec: (!track.codec_id.is_empty()).then(|| track.codec_id.clone()),
+        codec: matroska_subtitle_codec(&track.codec_id),
     }
 }
 
@@ -646,6 +649,23 @@ fn matroska_video_codec(id: &str) -> Option<VideoCodec> {
         value if value.starts_with("V_MS/VFW/FOURCC") && value.contains("WVC1") => {
             Some(VideoCodec::Vc1)
         }
+        _ => None,
+    }
+}
+
+fn matroska_subtitle_codec(id: &str) -> Option<SubtitleCodec> {
+    match id {
+        "S_TEXT/UTF8" => Some(SubtitleCodec::Srt),
+        "S_TEXT/SSA" => Some(SubtitleCodec::Ssa),
+        "S_TEXT/ASS" => Some(SubtitleCodec::Ass),
+        "S_TEXT/WEBVTT" => Some(SubtitleCodec::WebVtt),
+        "S_IMAGE/BMP" => Some(SubtitleCodec::Bitmap),
+        "S_DVBSUB" => Some(SubtitleCodec::Dvb),
+        "S_VOBSUB" => Some(SubtitleCodec::VobSub),
+        "S_HDMV/PGS" => Some(SubtitleCodec::Pgs),
+        "S_HDMV/TEXTST" => Some(SubtitleCodec::HdmvText),
+        "S_KATE" => Some(SubtitleCodec::Kate),
+        "S_ARIBSUB" => Some(SubtitleCodec::Arib),
         _ => None,
     }
 }

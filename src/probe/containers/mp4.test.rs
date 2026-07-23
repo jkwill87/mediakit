@@ -1,6 +1,7 @@
 //! Verifies bounded ISO-BMFF detection and probing.
 
 use super::*;
+use crate::meta::fields::SubtitleCodec;
 
 fn boxed(kind: &[u8; 4], payload: &[u8]) -> Vec<u8> {
     let mut data = Vec::new();
@@ -47,7 +48,7 @@ fn finds_nested_aac_audio_specific_config() {
 }
 
 #[test]
-fn retains_embedded_subtitle_codec_ids() {
+fn normalizes_embedded_subtitle_codec_ids() {
     let track = Track {
         enabled: true,
         handler: Some(*b"subt"),
@@ -62,7 +63,22 @@ fn retains_embedded_subtitle_codec_ids() {
         stream.info.language.map(|language| language.iso_639_1),
         Some("en")
     );
-    assert_eq!(stream.codec.as_deref(), Some("tx3g"));
+    assert_eq!(stream.codec, Some(SubtitleCodec::TimedText));
+
+    let cases = [
+        (*b"text", SubtitleCodec::PlainText),
+        (*b"sbtt", SubtitleCodec::PlainText),
+        (*b"stxt", SubtitleCodec::PlainText),
+        (*b"stpp", SubtitleCodec::Ttml),
+        (*b"wvtt", SubtitleCodec::WebVtt),
+        (*b"c608", SubtitleCodec::Cea608),
+        (*b"c708", SubtitleCodec::Cea708),
+        (*b"STGS", SubtitleCodec::SubtitleGraphics),
+    ];
+    for (fourcc, expected) in cases {
+        assert_eq!(subtitle_codec(&fourcc), Some(expected));
+    }
+    assert_eq!(subtitle_codec(b"????"), None);
 }
 
 #[test]

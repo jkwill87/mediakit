@@ -9,9 +9,11 @@ use super::binary::{fourcc, invalid, read_region, u32_le};
 use super::windows_media::{
     BITMAP_INFO_MIN_BYTES, WAVE_FORMAT_MIN_BYTES, parse_bitmap_info, parse_wave_audio,
 };
-use super::{MediaInfo, ProbeInput, fourcc_string, pixel_dimension, video_codec, video_resolution};
+use super::{
+    MediaInfo, ProbeInput, pixel_dimension, subtitle_codec, video_codec, video_resolution,
+};
 use crate::meta::fields::MediaFormat;
-use crate::probe::{AudioStream, StreamInfo, SubtitleStream, VideoStream};
+use crate::meta::streams::{AudioStream, StreamInfo, SubtitleStream, VideoStream};
 use std::io;
 use std::time::Duration;
 
@@ -204,7 +206,7 @@ pub(in crate::probe) fn probe(input: &mut ProbeInput) -> io::Result<MediaInfo> {
                     is_enabled: !stream.disabled,
                     ..StreamInfo::default()
                 },
-                codec: stream.handler.as_ref().and_then(fourcc_string),
+                codec: stream.handler.as_ref().and_then(subtitle_codec),
                 ..SubtitleStream::default()
             }),
             _ => {}

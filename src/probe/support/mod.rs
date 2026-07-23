@@ -8,7 +8,7 @@ mod media;
 pub(super) mod windows_media;
 
 pub(super) use media::{
-    audio_codec, audio_layout, avc_profile, fourcc_string, hevc_profile, pixel_dimension,
+    audio_codec, audio_layout, avc_profile, hevc_profile, pixel_dimension, subtitle_codec,
     video_codec, video_resolution,
 };
 
