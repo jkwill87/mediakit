@@ -29,6 +29,17 @@ fn parses_extensible_wave_codec_layout_and_bit_rate() {
 }
 
 #[test]
+fn maps_windows_media_audio_formats_to_wma() {
+    for format in [
+        WAVE_FORMAT_WMAUDIO2,
+        WAVE_FORMAT_WMAUDIO3,
+        WAVE_FORMAT_WMAUDIO_LOSSLESS,
+    ] {
+        assert_eq!(wave_audio_codec(format), Some(AudioCodec::Wma));
+    }
+}
+
+#[test]
 fn parses_signed_bitmap_dimensions_and_optional_compression() {
     let mut data = vec![0_u8; BITMAP_INFO_COMPRESSION_BYTES];
     data[BITMAP_WIDTH_OFFSET..BITMAP_WIDTH_OFFSET + 4]

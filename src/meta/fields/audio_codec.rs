@@ -25,6 +25,8 @@ crate::macros::convertable_enum! {
     Flac => "flac",
     /// Linear Pulse-Code Modulation.
     Lpcm => "lpcm",
+    /// MPEG-1 or MPEG-2 Audio whose layer is not established.
+    MpegAudio => "mpeg_audio",
     /// MPEG-1 Audio Layer III.
     Mp3 => "mp3",
     /// Opus interactive audio codec.
@@ -33,6 +35,8 @@ crate::macros::convertable_enum! {
     Pcm => "pcm",
     /// Ogg Vorbis.
     Vorbis => "vorbis",
+    /// Windows Media Audio.
+    Wma => "wma",
 }
 
 crate::unit_tests!("audio_codec.test.rs");

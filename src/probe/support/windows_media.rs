@@ -119,7 +119,7 @@ const fn wave_audio_codec(format_tag: u16) -> Option<AudioCodec> {
             Some(AudioCodec::Aac)
         }
         WAVE_FORMAT_WMAUDIO2 | WAVE_FORMAT_WMAUDIO3 | WAVE_FORMAT_WMAUDIO_LOSSLESS => {
-            Some(AudioCodec::DolbyDigitalPlus)
+            Some(AudioCodec::Wma)
         }
         WAVE_FORMAT_AC3 => Some(AudioCodec::DolbyDigital),
         WAVE_FORMAT_DTS => Some(AudioCodec::Dts),

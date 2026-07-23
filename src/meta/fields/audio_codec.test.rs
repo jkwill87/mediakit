@@ -127,6 +127,15 @@ fn lpcm_from_str() {
 }
 
 #[test]
+fn mpeg_audio_round_trip() {
+    assert_eq!(AudioCodec::MpegAudio.to_string(), "mpeg_audio");
+    assert_eq!(
+        AudioCodec::from_str("mpeg_audio").unwrap(),
+        AudioCodec::MpegAudio
+    );
+}
+
+#[test]
 fn mp3_to_string() {
     assert_eq!(AudioCodec::Mp3.to_string(), "mp3");
 }
@@ -154,4 +163,10 @@ fn vorbis_to_string() {
 #[test]
 fn vorbis_from_str() {
     assert_eq!(AudioCodec::from_str("vorbis").unwrap(), AudioCodec::Vorbis);
+}
+
+#[test]
+fn wma_round_trip() {
+    assert_eq!(AudioCodec::Wma.to_string(), "wma");
+    assert_eq!(AudioCodec::from_str("wma").unwrap(), AudioCodec::Wma);
 }

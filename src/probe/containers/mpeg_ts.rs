@@ -14,7 +14,7 @@
 use super::binary::{invalid, read_region};
 use super::{MediaInfo, ProbeInput};
 use crate::meta::{
-    fields::{AudioCodec, Language, MediaFormat, SubtitleCodec, VideoCodec},
+    fields::{AudioCodec, AudioProfile, Language, MediaFormat, SubtitleCodec, VideoCodec},
     streams::{AudioStream, StreamInfo, SubtitleStream, VideoStream},
 };
 use std::io;
@@ -433,13 +433,14 @@ fn parse_pmt(
                 ..VideoStream::default()
             });
         }
-        if let Some(codec) = audio_stream_type(stream_type, descriptors) {
+        if let Some(codec) = audio_stream_codec(stream_type, descriptors) {
             audio.push(AudioStream {
                 info: StreamInfo {
                     language,
                     ..StreamInfo::default()
                 },
                 codec: Some(codec),
+                profile: audio_stream_profile(stream_type),
                 ..AudioStream::default()
             });
         }
@@ -473,19 +474,27 @@ fn video_stream_type(stream_type: u8, descriptors: &[u8]) -> Option<VideoCodec> 
     }
 }
 
-fn audio_stream_type(stream_type: u8, descriptors: &[u8]) -> Option<AudioCodec> {
-    // 0x03/0x04 are MPEG audio, 0x0F/0x11 are AAC (ADTS/LATM), and values 0x81..0x87 are common
-    // ATSC/Blu-ray private assignments for AC-3, DTS, DTS variants, and E-AC-3. Type 0x06 relies on
-    // descriptors.
+fn audio_stream_codec(stream_type: u8, descriptors: &[u8]) -> Option<AudioCodec> {
+    // 0x03/0x04 identify MPEG audio without establishing its layer, 0x0F/0x11 are AAC
+    // (ADTS/LATM), and values 0x81..0x87 are common ATSC/Blu-ray private assignments for AC-3,
+    // DTS, DTS variants, and E-AC-3. Type 0x06 relies on descriptors.
     match stream_type {
-        STREAM_TYPE_MPEG1_AUDIO | STREAM_TYPE_MPEG2_AUDIO => Some(AudioCodec::Mp3),
+        STREAM_TYPE_MPEG1_AUDIO | STREAM_TYPE_MPEG2_AUDIO => Some(AudioCodec::MpegAudio),
         STREAM_TYPE_AAC_ADTS | STREAM_TYPE_AAC_LATM => Some(AudioCodec::Aac),
         STREAM_TYPE_AC3 => Some(AudioCodec::DolbyDigital),
-        STREAM_TYPE_DTS | STREAM_TYPE_DTS_HD_HIGH_RESOLUTION | STREAM_TYPE_DTS_HD_MASTER => {
-            Some(AudioCodec::Dts)
-        }
+        STREAM_TYPE_DTS => Some(AudioCodec::Dts),
+        STREAM_TYPE_DTS_HD_HIGH_RESOLUTION | STREAM_TYPE_DTS_HD_MASTER => Some(AudioCodec::DtsHD),
         STREAM_TYPE_EAC3 => Some(AudioCodec::DolbyDigitalPlus),
         STREAM_TYPE_PRIVATE_PES => descriptor_audio_codec(descriptors),
+        _ => None,
+    }
+}
+
+/// Returns the DTS-HD profile established directly by a Blu-ray stream-type assignment.
+const fn audio_stream_profile(stream_type: u8) -> Option<AudioProfile> {
+    match stream_type {
+        STREAM_TYPE_DTS_HD_HIGH_RESOLUTION => Some(AudioProfile::HighResolutionAudio),
+        STREAM_TYPE_DTS_HD_MASTER => Some(AudioProfile::MasterAudio),
         _ => None,
     }
 }

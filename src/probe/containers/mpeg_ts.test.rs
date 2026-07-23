@@ -45,6 +45,38 @@ fn maps_private_stream_descriptors() {
 }
 
 #[test]
+fn classifies_mpeg_audio_without_assuming_layer_three() {
+    assert_eq!(
+        audio_stream_codec(STREAM_TYPE_MPEG1_AUDIO, &[]),
+        Some(AudioCodec::MpegAudio)
+    );
+    assert_eq!(
+        audio_stream_codec(STREAM_TYPE_MPEG2_AUDIO, &[]),
+        Some(AudioCodec::MpegAudio)
+    );
+}
+
+#[test]
+fn retains_dts_hd_codec_and_profile() {
+    assert_eq!(
+        audio_stream_codec(STREAM_TYPE_DTS_HD_HIGH_RESOLUTION, &[]),
+        Some(AudioCodec::DtsHD)
+    );
+    assert_eq!(
+        audio_stream_profile(STREAM_TYPE_DTS_HD_HIGH_RESOLUTION),
+        Some(AudioProfile::HighResolutionAudio)
+    );
+    assert_eq!(
+        audio_stream_codec(STREAM_TYPE_DTS_HD_MASTER, &[]),
+        Some(AudioCodec::DtsHD)
+    );
+    assert_eq!(
+        audio_stream_profile(STREAM_TYPE_DTS_HD_MASTER),
+        Some(AudioProfile::MasterAudio)
+    );
+}
+
+#[test]
 fn maps_embedded_subtitle_streams() {
     assert_eq!(
         subtitle_stream_type(0x90, &[]),
