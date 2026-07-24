@@ -2,9 +2,9 @@
 
 use super::*;
 use crate::meta::fields::{
-    AudioCodec, MediaFormat, SubtitleCodec, VideoCodec, VideoProfile, VideoResolution,
+    AudioCodec, LanguageTag, MediaFormat, VideoCodec, VideoProfile, VideoResolution,
 };
-use crate::probe::FileProber;
+use crate::probe::{FileProber, SubtitleCodec, Track};
 use std::fs;
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -394,43 +394,76 @@ fn file_prober_reports_exact_format_for_every_container_subtype() {
 }
 
 #[test]
-fn file_prober_enumerates_streams_for_every_supported_container() {
-    for (extension, data, subtitle_codec, subtitle_language) in [
+fn file_prober_preserves_track_order_for_every_supported_container() {
+    for (extension, data, subtitle_codec, subtitle_language, order) in [
         (
             "mp4",
             mp4_fixture(),
             Some(SubtitleCodec::TimedText),
             Some("en"),
+            "vvaas",
+        ),
+        (
+            "mov",
+            iso_bmff_fixture(b"qt  "),
+            Some(SubtitleCodec::TimedText),
+            Some("en"),
+            "vvaas",
         ),
         (
             "mkv",
             matroska_fixture(),
             Some(SubtitleCodec::Srt),
             Some("es"),
+            "vvaas",
         ),
-        ("avi", avi_fixture(), Some(SubtitleCodec::Srt), None),
-        ("wmv", asf_fixture(), None, None),
-        ("ts", ts_fixture(), Some(SubtitleCodec::Pgs), None),
+        (
+            "webm",
+            matroska_fixture(),
+            Some(SubtitleCodec::Srt),
+            Some("es"),
+            "vvaas",
+        ),
+        ("avi", avi_fixture(), Some(SubtitleCodec::Srt), None, "vvaas"),
+        ("wmv", asf_fixture(), None, None, "aavv"),
+        ("ts", ts_fixture(), Some(SubtitleCodec::Pgs), None, "vvaas"),
+        (
+            "m2ts",
+            m2ts_fixture(),
+            Some(SubtitleCodec::Pgs),
+            None,
+            "vvaas",
+        ),
     ] {
         let fixture = Fixture::new(extension, &data);
         let info = FileProber::new(&fixture.path).unwrap().probe().unwrap();
-        assert_eq!(info.video_streams.len(), 2, "{extension}");
-        assert_eq!(info.audio_streams.len(), 2, "{extension}");
+        assert_eq!(info.video_tracks().count(), 2, "{extension}");
+        assert_eq!(info.audio_tracks().count(), 2, "{extension}");
         assert_eq!(
-            info.subtitle_streams
-                .first()
+            info.subtitle_tracks()
+                .next()
                 .and_then(|stream| stream.codec.clone()),
             subtitle_codec,
             "{extension}"
         );
         assert_eq!(
-            info.subtitle_streams
-                .first()
+            info.subtitle_tracks()
+                .next()
                 .and_then(|stream| stream.info.language)
                 .map(|language| language.iso_639_1),
             subtitle_language,
             "{extension}"
         );
+        let actual_order = info
+            .tracks
+            .iter()
+            .map(|track| match track {
+                Track::Video(_) => 'v',
+                Track::Audio(_) => 'a',
+                Track::Subtitle(_) => 's',
+            })
+            .collect::<String>();
+        assert_eq!(actual_order, order, "{extension}");
     }
 }
 
@@ -460,6 +493,14 @@ fn content_probe_overrides_misleading_extension_and_extracts_mp4_tracks() {
     assert!(has_tag(&inspector, |tag| matches!(
         tag,
         Tag::VideoResolution(VideoResolution::Hd1080p)
+    )));
+    assert!(has_tag(&inspector, |tag| matches!(
+        tag,
+        Tag::AudioLanguage(LanguageTag::Language(language)) if language.iso_639_1 == "en"
+    )));
+    assert!(!has_tag(&inspector, |tag| matches!(
+        tag,
+        Tag::SubtitleLanguage(_) | Tag::SubtitleDisposition(_)
     )));
 }
 
@@ -542,4 +583,37 @@ fn disabled_and_failed_probes_preserve_baseline_metadata() {
         tag,
         Tag::VideoCodec(_)
     )));
+}
+
+#[test]
+fn file_inspection_summarizes_all_audio_languages_but_no_embedded_subtitles() {
+    let matroska = inspect("mkv", &matroska_fixture());
+    assert!(has_tag(&matroska, |tag| matches!(
+        tag,
+        Tag::AudioLanguage(LanguageTag::Multi)
+    )));
+    assert!(!has_tag(&matroska, |tag| matches!(
+        tag,
+        Tag::SubtitleLanguage(_) | Tag::SubtitleDisposition(_)
+    )));
+
+    let avi = inspect("avi", &avi_fixture());
+    assert!(!has_tag(&avi, |tag| matches!(tag, Tag::AudioLanguage(_))));
+}
+
+#[test]
+fn file_inspection_does_not_parse_filename_metadata() {
+    let inspector = FileInspector::new("Movie.eng.ita.2.forced.srt").analyze();
+    assert!(has_tag(&inspector, |tag| matches!(tag, Tag::FileFormat(
+        MediaFormat::Srt
+    ))));
+    assert!(has_tag(&inspector, |tag| matches!(
+        tag,
+        Tag::MimeType(value) if value == MediaFormat::Srt.mime_type()
+    )));
+    assert!(!has_tag(&inspector, |tag| matches!(
+        tag,
+        Tag::Title(_) | Tag::SubtitleLanguage(_) | Tag::SubtitleDisposition(_)
+    )));
+    assert!(!has_tag(&inspector, |tag| matches!(tag, Tag::Container(_))));
 }

@@ -1,4 +1,4 @@
-//! Normalized values used by [`Tag`](crate::meta::Tag) and container streams.
+//! Normalized values used by [`Tag`](crate::meta::Tag) and probe tracks.
 //!
 //! Field types keep parsing aliases and presentation spelling at the edge of the library. Once a
 //! value is recognized, consumers can compare an enum or structured value instead of carrying
@@ -10,12 +10,11 @@
 //! | Domain              | Types                                                                        |
 //! | ------------------- | ---------------------------------------------------------------------------- |
 //! | File classification | [`MediaFormat`], [`ContentKind`], [`MediaType`]                              |
-//! | Locale              | [`Language`], [`LANG_ALL`], [`Country`], [`COUNTRY_ALL`]                     |
+//! | Locale              | [`Language`], [`LanguageTag`], [`LANG_ALL`], [`Country`], [`COUNTRY_ALL`]    |
 //! | Release and timing  | [`AirDate`], [`ReleaseSource`]                                               |
 //! | Audio               | [`AudioCodec`], [`AudioProfile`], [`AudioLayout`]                            |
-//! | Subtitle            | [`SubtitleCodec`]                                                            |
 //! | Video               | [`VideoCodec`], [`VideoProfile`], [`VideoResolution`], [`VideoDynamicRange`] |
-//! | External tracks     | [`TrackMetadata`], [`TrackKind`], [`TrackDisposition`]                       |
+//! | Subtitle filenames  | [`SubtitleDisposition`]                                                      |
 //!
 //!
 //! # Formats
@@ -57,19 +56,18 @@
 //! feature is enabled, `Language::detect_from_text` additionally recognizes supported languages
 //! from natural-language samples.
 //!
-//! # External-track metadata
+//! # Inspection language summaries
 //!
-//! [`TrackMetadata`] describes an audio or subtitle sidecar encoded in a filename. It retains its
-//! [`TrackKind`], optional [`Language`] and numeric discriminator, plus ordered
-//! [`TrackDisposition`] values such as [`TrackDisposition::Forced`] or
-//! [`TrackDisposition::Commentary`]. See
-//! [`crate::inspect::FilenameInspector::metadata`] for the filename workflow that produces it.
+//! Probe tracks use `Option<Language>` because every track has at most one known language.
+//! Inspection instead uses [`LanguageTag`] to flatten a category into one value: either one
+//! [`LanguageTag::Language`] or [`LanguageTag::Multi`]. Absence of a language tag represents no
+//! known language. [`SubtitleDisposition`] describes standalone subtitle suffixes such as `forced`.
 //!
 //! # Formatting and serialization
 //!
 //! Normalized field types implement [`std::fmt::Display`] where they have a canonical textual
 //! representation. With the default `with_serde` feature, formats, languages, countries, and
-//! external-track metadata also implement the appropriate Serde traits.
+//! subtitle-filename metadata also implement the appropriate Serde traits.
 
 mod air_date;
 mod audio_codec;
@@ -77,11 +75,11 @@ mod audio_layout;
 mod audio_profile;
 mod country;
 mod language;
+mod language_tag;
 mod media_format;
 mod media_type;
 mod release_source;
-mod subtitle_codec;
-mod track;
+mod subtitle_disposition;
 mod video_codec;
 mod video_dynamic_range;
 mod video_profile;
@@ -93,11 +91,11 @@ pub use audio_layout::AudioLayout;
 pub use audio_profile::AudioProfile;
 pub use country::{COUNTRY_ALL, Country};
 pub use language::{LANG_ALL, Language};
+pub use language_tag::LanguageTag;
 pub use media_format::{ContentKind, MediaFormat};
 pub use media_type::MediaType;
 pub use release_source::ReleaseSource;
-pub use subtitle_codec::SubtitleCodec;
-pub use track::{TrackDisposition, TrackKind, TrackMetadata};
+pub use subtitle_disposition::SubtitleDisposition;
 pub use video_codec::VideoCodec;
 pub use video_dynamic_range::VideoDynamicRange;
 pub use video_profile::VideoProfile;

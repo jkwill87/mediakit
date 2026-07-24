@@ -11,12 +11,13 @@
 
 use super::binary::{checked_end, fourcc, invalid, read_region, u16_be, u32_be, u64_be};
 use super::{
-    MediaInfo, ProbeInput, audio_codec, audio_layout, avc_profile, hevc_profile, pixel_dimension,
+    ProbeInput, ProbeResult, audio_codec, audio_layout, avc_profile, hevc_profile, pixel_dimension,
     subtitle_codec, video_codec, video_resolution,
 };
 use crate::meta::fields::{AudioProfile, Language, MediaFormat, VideoDynamicRange};
-use crate::meta::streams::{AudioStream, StreamInfo, SubtitleStream, VideoStream};
-use crate::probe::ProbeError;
+use crate::probe::{
+    AudioTrack, ProbeError, SubtitleTrack, Track as MediaTrack, TrackInfo, VideoTrack,
+};
 use std::io::{self, Read, Seek, SeekFrom};
 use std::time::Duration;
 
@@ -287,7 +288,7 @@ pub(in crate::probe) fn matches(prefix: &[u8]) -> bool {
 }
 
 /// Probes a detected ISO-BMFF container.
-pub(in crate::probe) fn probe(input: &mut ProbeInput) -> Result<MediaInfo, ProbeError> {
+pub(in crate::probe) fn probe(input: &mut ProbeInput) -> Result<ProbeResult, ProbeError> {
     let file_len = input.len();
     let top_level = (|| -> io::Result<_> {
         let file = input.file();
@@ -375,8 +376,8 @@ fn is_quicktime_brand(ftyp: &[u8]) -> bool {
         .any(|brand| brand == b"qt  ")
 }
 
-fn parse_movie(data: &[u8], format: MediaFormat) -> io::Result<MediaInfo> {
-    let mut media = MediaInfo::new(format);
+fn parse_movie(data: &[u8], format: MediaFormat) -> io::Result<ProbeResult> {
+    let mut media = ProbeResult::new(format);
     let mut movie_duration = None;
     let mut tracks = Vec::new();
     for child in Boxes::new(data) {
@@ -394,10 +395,12 @@ fn parse_movie(data: &[u8], format: MediaFormat) -> io::Result<MediaInfo> {
         // subtitle values cover closed captions, subtitles, MPEG-4 subtitle systems, and QuickTime
         // text tracks respectively.
         match track.handler.as_ref() {
-            Some(b"soun") => media.audio_streams.push(audio_stream(track)),
-            Some(b"vide") => media.video_streams.push(video_stream(track)),
+            Some(b"soun") => media.tracks.push(MediaTrack::Audio(audio_stream(track))),
+            Some(b"vide") => media.tracks.push(MediaTrack::Video(video_stream(track))),
             Some(b"clcp" | b"sbtl" | b"subt" | b"text") => {
-                media.subtitle_streams.push(subtitle_stream(track));
+                media
+                    .tracks
+                    .push(MediaTrack::Subtitle(subtitle_stream(track)));
             }
             _ => {}
         }
@@ -405,12 +408,12 @@ fn parse_movie(data: &[u8], format: MediaFormat) -> io::Result<MediaInfo> {
     Ok(media)
 }
 
-fn audio_stream(track: &Track) -> AudioStream {
-    AudioStream {
-        info: StreamInfo {
+fn audio_stream(track: &Track) -> AudioTrack {
+    AudioTrack {
+        info: TrackInfo {
             is_enabled: track.enabled,
             language: track.language,
-            ..StreamInfo::default()
+            ..TrackInfo::default()
         },
         codec: track.codec.as_ref().and_then(audio_codec),
         profile: track.audio_profile.clone().or(match track.codec.as_ref() {
@@ -423,18 +426,18 @@ fn audio_stream(track: &Track) -> AudioStream {
     }
 }
 
-fn video_stream(track: &Track) -> VideoStream {
+fn video_stream(track: &Track) -> VideoTrack {
     let frame_rate = match (track.average_sample_delta, track.timescale) {
         (Some(delta), timescale) if delta > 0.0 && timescale > 0 => {
             Some((timescale as f64 / delta) as f32)
         }
         _ => None,
     };
-    VideoStream {
-        info: StreamInfo {
+    VideoTrack {
+        info: TrackInfo {
             is_enabled: track.enabled,
             language: track.language,
-            ..StreamInfo::default()
+            ..TrackInfo::default()
         },
         codec: track.codec.as_ref().and_then(video_codec),
         profile: track.video_profile.clone(),
@@ -446,12 +449,12 @@ fn video_stream(track: &Track) -> VideoStream {
     }
 }
 
-fn subtitle_stream(track: &Track) -> SubtitleStream {
-    SubtitleStream {
-        info: StreamInfo {
+fn subtitle_stream(track: &Track) -> SubtitleTrack {
+    SubtitleTrack {
+        info: TrackInfo {
             is_enabled: track.enabled,
             language: track.language,
-            ..StreamInfo::default()
+            ..TrackInfo::default()
         },
         codec: track.codec.as_ref().and_then(subtitle_codec),
     }

@@ -15,7 +15,7 @@ fn parses_extensible_wave_codec_layout_and_bit_rate() {
     data[WAVE_SUBFORMAT_TAG_OFFSET..WAVE_SUBFORMAT_TAG_OFFSET + 2]
         .copy_from_slice(&WAVE_FORMAT_AC3.to_le_bytes());
 
-    let stream = parse_wave_audio(&data, StreamInfo::default()).unwrap();
+    let stream = parse_wave_audio(&data, TrackInfo::default()).unwrap();
     assert_eq!(stream.codec, Some(AudioCodec::DolbyDigital));
     assert_eq!(
         stream.layout,

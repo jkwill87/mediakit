@@ -1,6 +1,6 @@
-//! Probes a media container and prints its ordered stream metadata.
+//! Probes a media container and prints tracks in global container order.
 
-use mediakit::probe::{FileProber, ProbeError};
+use mediakit::probe::{FileProber, ProbeError, Track};
 use std::env;
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -47,22 +47,20 @@ fn main() -> ExitCode {
         println!("duration: {:.3}s", duration.as_secs_f64());
     }
 
-    let primary_audio = media.primary_audio_stream();
-    for (index, stream) in media.audio_streams.iter().enumerate() {
-        let primary = primary_audio.is_some_and(|primary| std::ptr::eq(stream, primary));
-        println!("audio_stream[{index}] primary={primary}: {stream:#?}");
-    }
-
-    let primary_video = media.primary_video_stream();
-    for (index, stream) in media.video_streams.iter().enumerate() {
-        let primary = primary_video.is_some_and(|primary| std::ptr::eq(stream, primary));
-        println!("video_stream[{index}] primary={primary}: {stream:#?}");
-    }
-
-    let primary_subtitle = media.primary_subtitle_stream();
-    for (index, stream) in media.subtitle_streams.iter().enumerate() {
-        let primary = primary_subtitle.is_some_and(|primary| std::ptr::eq(stream, primary));
-        println!("subtitle_stream[{index}] primary={primary}: {stream:#?}");
+    for (index, track) in media.tracks.iter().enumerate() {
+        let primary = match track {
+            Track::Audio(track) => media
+                .primary_audio_track()
+                .is_some_and(|primary| std::ptr::eq(track, primary)),
+            Track::Video(track) => media
+                .primary_video_track()
+                .is_some_and(|primary| std::ptr::eq(track, primary)),
+            Track::Subtitle(track) => media
+                .primary_subtitle_track()
+                .is_some_and(|primary| std::ptr::eq(track, primary)),
+            _ => false,
+        };
+        println!("track[{index}] primary={primary}: {track:#?}");
     }
 
     ExitCode::SUCCESS

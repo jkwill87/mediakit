@@ -108,7 +108,7 @@ fn edition_after_year_is_not_an_alternative_title() {
 #[test]
 fn descriptive_text_after_year_remains_an_alternative_title() {
     let inspector = _run_pipeline("London.2012.Olympics.CTV.Preview.Show.HDTV.mkv");
-    assert!(inspector.tags().iter().any(
-        |tag| matches!(tag, Tag::AlternativeTitle(value) if value == "Olympics CTV Preview Show HDTV")
+    assert!(inspector.tokens().iter().any(
+        |token| matches!(&token.tag, Some(Tag::AlternativeTitle(value)) if value == "Olympics CTV Preview Show HDTV")
     ));
 }

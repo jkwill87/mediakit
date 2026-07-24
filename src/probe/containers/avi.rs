@@ -10,10 +10,10 @@ use super::windows_media::{
     BITMAP_INFO_MIN_BYTES, WAVE_FORMAT_MIN_BYTES, parse_bitmap_info, parse_wave_audio,
 };
 use super::{
-    MediaInfo, ProbeInput, pixel_dimension, subtitle_codec, video_codec, video_resolution,
+    ProbeInput, ProbeResult, pixel_dimension, subtitle_codec, video_codec, video_resolution,
 };
 use crate::meta::fields::MediaFormat;
-use crate::meta::streams::{AudioStream, StreamInfo, SubtitleStream, VideoStream};
+use crate::probe::{AudioTrack, SubtitleTrack, Track, TrackInfo, VideoTrack};
 use std::io;
 use std::time::Duration;
 
@@ -154,7 +154,7 @@ pub(in crate::probe) fn matches(prefix: &[u8]) -> bool {
 }
 
 /// Probes a detected AVI container.
-pub(in crate::probe) fn probe(input: &mut ProbeInput) -> io::Result<MediaInfo> {
+pub(in crate::probe) fn probe(input: &mut ProbeInput) -> io::Result<ProbeResult> {
     let file_len = input.len();
     let data = read_region(
         input.file(),
@@ -165,7 +165,7 @@ pub(in crate::probe) fn probe(input: &mut ProbeInput) -> io::Result<MediaInfo> {
     if !matches(&data) {
         return Err(invalid("AVI RIFF header missing"));
     }
-    let mut media = MediaInfo::new(MediaFormat::Avi);
+    let mut media = ProbeResult::new(MediaFormat::Avi);
     let mut headers = Headers::default();
     parse_chunks(&data[RIFF_AVI_HEADER_BYTES..], &mut headers)?;
 
@@ -198,17 +198,17 @@ pub(in crate::probe) fn probe(input: &mut ProbeInput) -> io::Result<MediaInfo> {
                     )
                     .ok();
                 }
-                media.video_streams.push(video);
+                media.tracks.push(Track::Video(video));
             }
-            Some(b"auds") => media.audio_streams.push(audio_stream(stream)?),
-            Some(b"txts") => media.subtitle_streams.push(SubtitleStream {
-                info: StreamInfo {
+            Some(b"auds") => media.tracks.push(Track::Audio(audio_stream(stream)?)),
+            Some(b"txts") => media.tracks.push(Track::Subtitle(SubtitleTrack {
+                info: TrackInfo {
                     is_enabled: !stream.disabled,
-                    ..StreamInfo::default()
+                    ..TrackInfo::default()
                 },
                 codec: stream.handler.as_ref().and_then(subtitle_codec),
-                ..SubtitleStream::default()
-            }),
+                ..SubtitleTrack::default()
+            })),
             _ => {}
         }
     }
@@ -220,7 +220,7 @@ fn video_stream(
     default_width: u64,
     default_height: u64,
     microseconds_per_frame: u32,
-) -> io::Result<VideoStream> {
+) -> io::Result<VideoTrack> {
     // A video `strf` is a BITMAPINFOHEADER: dimensions begin at byte 4 and the compression FourCC
     // at byte 16. The stream handler is the fallback codec identifier when that structure is absent
     // or abbreviated.
@@ -241,10 +241,10 @@ fn video_stream(
     } else {
         None
     };
-    Ok(VideoStream {
-        info: StreamInfo {
+    Ok(VideoTrack {
+        info: TrackInfo {
             is_enabled: !stream.disabled,
-            ..StreamInfo::default()
+            ..TrackInfo::default()
         },
         codec: compression.as_ref().and_then(video_codec),
         profile: None,
@@ -256,21 +256,21 @@ fn video_stream(
     })
 }
 
-fn audio_stream(stream: &Stream) -> io::Result<AudioStream> {
+fn audio_stream(stream: &Stream) -> io::Result<AudioTrack> {
     if stream.format.len() < WAVE_FORMAT_MIN_BYTES {
-        return Ok(AudioStream {
-            info: StreamInfo {
+        return Ok(AudioTrack {
+            info: TrackInfo {
                 is_enabled: !stream.disabled,
-                ..StreamInfo::default()
+                ..TrackInfo::default()
             },
-            ..AudioStream::default()
+            ..AudioTrack::default()
         });
     }
     parse_wave_audio(
         &stream.format,
-        StreamInfo {
+        TrackInfo {
             is_enabled: !stream.disabled,
-            ..StreamInfo::default()
+            ..TrackInfo::default()
         },
     )
 }

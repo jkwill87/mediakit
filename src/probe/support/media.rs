@@ -1,9 +1,8 @@
 //! Normalizes media identifiers and technical fields shared by container families.
 
 use super::FOURCC_BYTES;
-use crate::meta::fields::{
-    AudioCodec, AudioLayout, SubtitleCodec, VideoCodec, VideoProfile, VideoResolution,
-};
+use crate::meta::fields::{AudioCodec, AudioLayout, VideoCodec, VideoProfile, VideoResolution};
+use crate::probe::SubtitleCodec;
 
 /// Windows speaker-mask bit for the low-frequency-effects channel.
 const SPEAKER_LOW_FREQUENCY: u32 = 0x0000_0008;

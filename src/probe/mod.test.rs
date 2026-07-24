@@ -1,10 +1,13 @@
 //! Verifies container detection and probe error handling.
 
 use super::*;
-use crate::meta::fields::{AudioCodec, MediaFormat, SubtitleCodec, VideoCodec};
+use crate::meta::fields::{AudioCodec, MediaFormat, VideoCodec};
+use crate::probe::SubtitleCodec;
 use std::fs;
 use std::path::PathBuf;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::sync::atomic::{AtomicU64, Ordering};
+
+static NEXT_FILE: AtomicU64 = AtomicU64::new(0);
 
 struct Fixture {
     path: PathBuf,
@@ -12,11 +15,11 @@ struct Fixture {
 
 impl Fixture {
     fn new(extension: &str, data: &[u8]) -> Self {
-        let nonce = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
-        let path = std::env::temp_dir().join(format!("mediakit-probe-{nonce}.{extension}"));
+        let id = NEXT_FILE.fetch_add(1, Ordering::Relaxed);
+        let path = std::env::temp_dir().join(format!(
+            "mediakit-probe-{}-{id}.{extension}",
+            std::process::id()
+        ));
         fs::write(&path, data).unwrap();
         Self { path }
     }
@@ -62,7 +65,7 @@ fn ts_fixture() -> Vec<u8> {
     output
 }
 
-fn probe_data(extension: &str, data: &[u8]) -> Result<MediaInfo, ProbeError> {
+fn probe_data(extension: &str, data: &[u8]) -> Result<ProbeResult, ProbeError> {
     let fixture = Fixture::new(extension, data);
     FileProber::new(&fixture.path).and_then(FileProber::probe)
 }
@@ -71,17 +74,23 @@ fn probe_data(extension: &str, data: &[u8]) -> Result<MediaInfo, ProbeError> {
 fn file_prober_enumerates_transport_stream_tracks() {
     let info = probe_data("ts", &ts_fixture()).unwrap();
     assert_eq!(info.container, MediaFormat::Ts);
-    assert_eq!(info.video_streams.len(), 2);
-    assert_eq!(info.audio_streams.len(), 1);
-    assert_eq!(info.subtitle_streams.len(), 1);
-    assert_eq!(info.video_streams[0].codec, Some(VideoCodec::H265));
-    assert_eq!(info.video_streams[1].codec, Some(VideoCodec::H264));
+    assert_eq!(info.video_tracks().count(), 2);
+    assert_eq!(info.audio_tracks().count(), 1);
+    assert_eq!(info.subtitle_tracks().count(), 1);
     assert_eq!(
-        info.audio_streams[0].codec,
+        info.video_tracks().next().unwrap().codec,
+        Some(VideoCodec::H265)
+    );
+    assert_eq!(
+        info.video_tracks().nth(1).unwrap().codec,
+        Some(VideoCodec::H264)
+    );
+    assert_eq!(
+        info.audio_tracks().next().unwrap().codec,
         Some(AudioCodec::DolbyDigitalPlus)
     );
     assert_eq!(
-        info.subtitle_streams[0].codec,
+        info.subtitle_tracks().next().unwrap().codec,
         Some(SubtitleCodec::Pgs)
     );
 }

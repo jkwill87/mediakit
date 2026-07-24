@@ -10,6 +10,10 @@ impl FilenameInspector {
     /// **Preconditions:**
     /// - None
     pub(super) fn inspect_file_format(mut self) -> Self {
+        let Some(format) = self.file_format() else {
+            return self;
+        };
+
         let ntokens = self.tokens.len();
         if ntokens < 2 {
             return self;
@@ -20,15 +24,9 @@ impl FilenameInspector {
             return self;
         }
         let last_token = &self.tokens[ntokens - 1];
-        let Some(format) = MediaFormat::from_extension(last_token.template(&self.filename)) else {
+        if MediaFormat::from_extension(last_token.template(&self.filename)) != Some(format) {
             return self;
-        };
-        let identity_stem = self
-            .path
-            .file_stem()
-            .and_then(|stem| stem.to_str())
-            .map(str::to_owned);
-        self.metadata.set_format(format, identity_stem);
+        }
         self.tokens[ntokens - 1].tag = Some(Tag::FileFormat(format));
         self
     }

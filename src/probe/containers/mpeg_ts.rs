@@ -12,11 +12,9 @@
 //! below.
 
 use super::binary::{invalid, read_region};
-use super::{MediaInfo, ProbeInput};
-use crate::meta::{
-    fields::{AudioCodec, AudioProfile, Language, MediaFormat, SubtitleCodec, VideoCodec},
-    streams::{AudioStream, StreamInfo, SubtitleStream, VideoStream},
-};
+use super::{ProbeInput, ProbeResult};
+use crate::meta::fields::{AudioCodec, AudioProfile, Language, MediaFormat, VideoCodec};
+use crate::probe::{AudioTrack, SubtitleCodec, SubtitleTrack, Track, TrackInfo, VideoTrack};
 use std::io;
 
 /// Maximum transport-stream prefix scanned for PAT and PMT sections (8 MiB).
@@ -252,7 +250,7 @@ impl<'a> Iterator for Descriptors<'a> {
 }
 
 /// Probes a detected MPEG transport stream using its prepared packet layout.
-pub(in crate::probe) fn probe(input: &mut ProbeInput, layout: Layout) -> io::Result<MediaInfo> {
+pub(in crate::probe) fn probe(input: &mut ProbeInput, layout: Layout) -> io::Result<ProbeResult> {
     let file_len = input.len();
     let data = read_region(input.file(), 0, file_len.min(MAX_TS_SCAN_BYTES), file_len)?;
     // PID 0 and table_id 0x00 are reserved for the PAT. The selected program's PMT uses
@@ -262,11 +260,8 @@ pub(in crate::probe) fn probe(input: &mut ProbeInput, layout: Layout) -> io::Res
     let pmt_pid = parse_pat(&pat).ok_or_else(|| invalid("MPEG-TS PAT has no program"))?;
     let pmt = collect_section(&data, layout, pmt_pid, PMT_TABLE_ID)?
         .ok_or_else(|| invalid("MPEG-TS PMT not found"))?;
-    let (video_streams, audio_streams, subtitle_streams) = parse_pmt(&pmt)?;
-    let mut media = MediaInfo::new(layout.media_format());
-    media.video_streams = video_streams;
-    media.audio_streams = audio_streams;
-    media.subtitle_streams = subtitle_streams;
+    let mut media = ProbeResult::new(layout.media_format());
+    media.tracks = parse_pmt(&pmt)?;
     Ok(media)
 }
 
@@ -386,9 +381,7 @@ fn parse_pat(section: &[u8]) -> Option<u16> {
     None
 }
 
-fn parse_pmt(
-    section: &[u8],
-) -> io::Result<(Vec<VideoStream>, Vec<AudioStream>, Vec<SubtitleStream>)> {
+fn parse_pmt(section: &[u8]) -> io::Result<Vec<Track>> {
     if section.len() < PMT_MIN_BYTES {
         return Err(invalid("truncated MPEG-TS PMT"));
     }
@@ -406,9 +399,7 @@ fn parse_pmt(
         .len()
         .checked_sub(PSI_CRC_BYTES)
         .ok_or_else(|| invalid("truncated PMT checksum"))?;
-    let mut video = Vec::new();
-    let mut audio = Vec::new();
-    let mut subtitles = Vec::new();
+    let mut tracks = Vec::new();
     while offset + PMT_STREAM_ENTRY_BYTES <= end {
         let stream_type = section[offset + PMT_STREAM_TYPE_OFFSET];
         let descriptor_len = ((usize::from(
@@ -424,39 +415,37 @@ fn parse_pmt(
             .ok_or_else(|| invalid("PMT descriptor exceeds section"))?;
         let language = descriptor_language(descriptors);
         if let Some(codec) = video_stream_type(stream_type, descriptors) {
-            video.push(VideoStream {
-                info: StreamInfo {
+            tracks.push(Track::Video(VideoTrack {
+                info: TrackInfo {
                     language,
-                    ..StreamInfo::default()
+                    ..TrackInfo::default()
                 },
                 codec: Some(codec),
-                ..VideoStream::default()
-            });
-        }
-        if let Some(codec) = audio_stream_codec(stream_type, descriptors) {
-            audio.push(AudioStream {
-                info: StreamInfo {
+                ..VideoTrack::default()
+            }));
+        } else if let Some(codec) = audio_stream_codec(stream_type, descriptors) {
+            tracks.push(Track::Audio(AudioTrack {
+                info: TrackInfo {
                     language,
-                    ..StreamInfo::default()
+                    ..TrackInfo::default()
                 },
                 codec: Some(codec),
                 profile: audio_stream_profile(stream_type),
-                ..AudioStream::default()
-            });
-        }
-        if let Some(codec) = subtitle_stream_type(stream_type, descriptors) {
-            subtitles.push(SubtitleStream {
-                info: StreamInfo {
+                ..AudioTrack::default()
+            }));
+        } else if let Some(codec) = subtitle_stream_type(stream_type, descriptors) {
+            tracks.push(Track::Subtitle(SubtitleTrack {
+                info: TrackInfo {
                     language,
-                    ..StreamInfo::default()
+                    ..TrackInfo::default()
                 },
                 codec: Some(codec),
-                ..SubtitleStream::default()
-            });
+                ..SubtitleTrack::default()
+            }));
         }
         offset = descriptor_end;
     }
-    Ok((video, audio, subtitles))
+    Ok(tracks)
 }
 
 fn video_stream_type(stream_type: u8, descriptors: &[u8]) -> Option<VideoCodec> {

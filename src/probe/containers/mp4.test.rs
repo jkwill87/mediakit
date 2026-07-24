@@ -1,7 +1,7 @@
 //! Verifies bounded ISO-BMFF detection and probing.
 
 use super::*;
-use crate::meta::fields::SubtitleCodec;
+use crate::probe::SubtitleCodec;
 
 fn boxed(kind: &[u8; 4], payload: &[u8]) -> Vec<u8> {
     let mut data = Vec::new();

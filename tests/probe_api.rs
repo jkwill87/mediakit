@@ -1,15 +1,15 @@
 //! Verifies the public container-probing contract.
 
-use mediakit::meta::{
-    fields::{Language, MediaFormat, SubtitleCodec},
-    streams::{AudioStream, StreamInfo, SubtitleStream, VideoStream},
+use mediakit::meta::fields::{Language, MediaFormat};
+use mediakit::probe::{
+    AudioTrack, FileProber, ProbeError, ProbeResult, SubtitleCodec, SubtitleTrack, Track,
+    TrackInfo, VideoTrack,
 };
-use mediakit::probe::{FileProber, MediaInfo, ProbeError};
 use std::fs;
 
 #[test]
 fn file_prober_api_is_available_to_external_callers() {
-    fn assert_result_type(_: Result<MediaInfo, ProbeError>) {}
+    fn assert_result_type(_: Result<ProbeResult, ProbeError>) {}
 
     let path = std::env::temp_dir().join(format!("mediakit-public-probe-{}", std::process::id()));
     fs::write(&path, b"RIFF\0\0\0\0AVI ").unwrap();
@@ -28,31 +28,38 @@ fn file_prober_api_is_available_to_external_callers() {
 }
 
 #[test]
-fn embedded_subtitle_stream_type_is_public() {
-    fn assert_audio_type(_: AudioStream) {}
+fn embedded_subtitle_track_type_is_public() {
+    fn assert_audio_type(_: AudioTrack) {}
     fn assert_language_type(_: Option<Language>) {}
-    fn assert_info_type(_: StreamInfo) {}
+    fn assert_info_type(_: TrackInfo) {}
     fn assert_codec_type(_: Option<SubtitleCodec>) {}
-    fn assert_video_type(_: VideoStream) {}
+    fn assert_video_type(_: VideoTrack) {}
 
-    let stream = SubtitleStream::default();
+    let track = SubtitleTrack::default();
 
-    assert_audio_type(AudioStream::default());
-    assert!(stream.info.is_enabled);
-    assert!(!stream.info.is_default);
-    assert_language_type(stream.info.language);
-    assert_info_type(stream.info);
-    assert_codec_type(stream.codec.clone());
-    assert_eq!(stream.info.language, None);
-    assert_eq!(stream.codec, None);
-    assert_video_type(VideoStream::default());
+    assert_audio_type(AudioTrack::default());
+    assert!(track.info.is_enabled);
+    assert!(!track.info.is_default);
+    assert_language_type(track.info.language);
+    assert_info_type(track.info);
+    assert_codec_type(track.codec.clone());
+    assert_eq!(track.info.language, None);
+    assert_eq!(track.codec, None);
+    assert_video_type(VideoTrack::default());
 }
 
 #[test]
 fn media_format_is_the_public_container_type() {
     fn assert_format_type(_: MediaFormat) {}
 
-    let stream = StreamInfo::default();
-    assert!(stream.is_enabled);
+    let track = TrackInfo::default();
+    assert!(track.is_enabled);
     assert_format_type(MediaFormat::Mkv);
+}
+
+#[test]
+fn track_kind_is_expressed_by_the_enum_variant() {
+    let track = Track::Audio(AudioTrack::default());
+    assert!(matches!(track, Track::Audio(_)));
+    assert!(track.info().is_enabled);
 }

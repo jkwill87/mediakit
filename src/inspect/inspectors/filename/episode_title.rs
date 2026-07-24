@@ -15,6 +15,7 @@ impl FilenameInspector {
         if self.media_type() != MediaType::Television {
             return self;
         }
+        let identity_end = self.subtitle_identity_end().unwrap_or(self.filename.len());
         let last_ep_idx = match self
             .tokens
             .iter()
@@ -27,12 +28,16 @@ impl FilenameInspector {
         if range_start >= self.tokens.len() {
             return self;
         }
-        let range_end = self.tokens[range_start..]
+        let tagged_end = self.tokens[range_start..]
             .iter()
             .position(|t| t.tag.is_some())
             .map_or(self.tokens.len(), |offset| range_start + offset);
+        let identity_end_idx = self.tokens[range_start..]
+            .iter()
+            .position(|token| token.start >= identity_end)
+            .map_or(self.tokens.len(), |offset| range_start + offset);
         // trim trailing delimiters
-        let mut range_end = range_end;
+        let mut range_end = tagged_end.min(identity_end_idx);
         while range_end > range_start
             && matches!(self.tokens[range_end - 1].ident, TokenIdentity::Delimiter)
         {

@@ -10,14 +10,14 @@
 
 use super::binary::{checked_end, invalid, read_region};
 use super::{
-    MediaInfo, ProbeInput, audio_layout, avc_profile, hevc_profile, pixel_dimension,
+    ProbeInput, ProbeResult, audio_layout, avc_profile, hevc_profile, pixel_dimension,
     video_resolution,
 };
-use crate::meta::{
-    fields::{AudioCodec, AudioProfile, Language, MediaFormat, SubtitleCodec, VideoCodec},
-    streams::{AudioStream, StreamInfo, SubtitleStream, VideoStream},
+use crate::meta::fields::{AudioCodec, AudioProfile, Language, MediaFormat, VideoCodec};
+use crate::probe::{
+    AudioTrack, ProbeError, SubtitleCodec, SubtitleTrack, Track as MediaTrack, TrackInfo,
+    VideoTrack,
 };
-use crate::probe::ProbeError;
 use std::fs::File;
 use std::io::{self, Read, Seek, SeekFrom};
 use std::time::Duration;
@@ -215,7 +215,7 @@ pub(in crate::probe) fn matches(prefix: &[u8]) -> bool {
 }
 
 /// Probes a detected Matroska container.
-pub(in crate::probe) fn probe(input: &mut ProbeInput) -> Result<MediaInfo, ProbeError> {
+pub(in crate::probe) fn probe(input: &mut ProbeInput) -> Result<ProbeResult, ProbeError> {
     let file_len = input.len();
     let (ebml_end, format) = probe_header(input.file(), file_len)
         .map_err(|error| ProbeError::from_probe(MediaFormat::Mkv, error))?;
@@ -251,7 +251,7 @@ fn probe_segment(
     file_len: u64,
     ebml_end: u64,
     format: MediaFormat,
-) -> io::Result<MediaInfo> {
+) -> io::Result<ProbeResult> {
     file.seek(SeekFrom::Start(ebml_end))?;
     let segment = read_file_element(file, file_len)?;
     if segment.id != SEGMENT {
@@ -292,7 +292,7 @@ fn probe_segment(
         offset = element.end;
     }
 
-    let mut media = MediaInfo::new(format);
+    let mut media = ProbeResult::new(format);
     if let Some(duration) = duration {
         // Info.Duration is measured in Segment Ticks, not seconds.
         let seconds = duration * timecode_scale as f64 / NANOSECONDS_PER_SECOND;
@@ -303,18 +303,20 @@ fn probe_segment(
     for track in &tracks {
         // Matroska TrackType values are registry assignments, not bit flags.
         match track.kind {
-            TRACK_TYPE_VIDEO => media.video_streams.push(video_stream(track)),
-            TRACK_TYPE_AUDIO => media.audio_streams.push(audio_stream(track)),
-            TRACK_TYPE_SUBTITLE => media.subtitle_streams.push(subtitle_stream(track)),
+            TRACK_TYPE_VIDEO => media.tracks.push(MediaTrack::Video(video_stream(track))),
+            TRACK_TYPE_AUDIO => media.tracks.push(MediaTrack::Audio(audio_stream(track))),
+            TRACK_TYPE_SUBTITLE => media
+                .tracks
+                .push(MediaTrack::Subtitle(subtitle_stream(track))),
             _ => {}
         }
     }
     Ok(media)
 }
 
-fn audio_stream(track: &Track) -> AudioStream {
-    AudioStream {
-        info: StreamInfo {
+fn audio_stream(track: &Track) -> AudioTrack {
+    AudioTrack {
+        info: TrackInfo {
             is_enabled: track.enabled,
             is_default: track.default,
             language: track_language(track),
@@ -326,7 +328,7 @@ fn audio_stream(track: &Track) -> AudioStream {
     }
 }
 
-fn video_stream(track: &Track) -> VideoStream {
+fn video_stream(track: &Track) -> VideoTrack {
     let codec = matroska_video_codec(&track.codec_id);
     // AVCDecoderConfigurationRecord stores profile_idc at byte 1. The HEVC record stores
     // general_profile_idc in byte 1's low five bits and bitDepthLumaMinus8 in byte 17's low three
@@ -349,8 +351,8 @@ fn video_stream(track: &Track) -> VideoStream {
             }),
         _ => None,
     };
-    VideoStream {
-        info: StreamInfo {
+    VideoTrack {
+        info: TrackInfo {
             is_enabled: track.enabled,
             is_default: track.default,
             language: track_language(track),
@@ -368,9 +370,9 @@ fn video_stream(track: &Track) -> VideoStream {
     }
 }
 
-fn subtitle_stream(track: &Track) -> SubtitleStream {
-    SubtitleStream {
-        info: StreamInfo {
+fn subtitle_stream(track: &Track) -> SubtitleTrack {
+    SubtitleTrack {
+        info: TrackInfo {
             is_enabled: track.enabled,
             is_default: track.default,
             language: track_language(track),

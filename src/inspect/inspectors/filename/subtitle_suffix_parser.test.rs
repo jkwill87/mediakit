@@ -1,7 +1,14 @@
-//! Verifies external-track suffix parsing.
+//! Verifies standalone-subtitle suffix parsing.
 
 use super::*;
 use std::path::PathBuf;
+
+fn language_code(language: LanguageTag) -> Option<&'static str> {
+    match language {
+        LanguageTag::Language(language) => Some(language.iso_639_1),
+        LanguageTag::Multi => None,
+    }
+}
 
 #[test]
 fn supports_python_formats_and_mediakit_native_formats() {
@@ -15,10 +22,35 @@ fn supports_python_formats_and_mediakit_native_formats() {
         "Anora.2024.en.SRT",
     ] {
         assert!(
-            ParsedTrackSuffix::parse(Path::new(name)).is_some(),
+            ParsedSubtitleSuffix::parse(Path::new(name)).is_some(),
             "{name}"
         );
     }
+}
+
+#[test]
+fn preserves_language_markers_for_pipeline_normalization() {
+    let english = LanguageTag::Language(Language::from_identifier("eng").unwrap());
+    let italian = LanguageTag::Language(Language::from_identifier("ita").unwrap());
+
+    assert_eq!(
+        ParsedSubtitleSuffix::parse(Path::new("Movie.eng.eng.srt"))
+            .unwrap()
+            .languages,
+        [english, english]
+    );
+    assert_eq!(
+        ParsedSubtitleSuffix::parse(Path::new("Movie.ita.multi.eng.srt"))
+            .unwrap()
+            .languages,
+        [italian, LanguageTag::Multi, english]
+    );
+    assert!(
+        ParsedSubtitleSuffix::parse(Path::new("Multi.srt"))
+            .unwrap()
+            .languages
+            .is_empty()
+    );
 }
 
 #[test]
@@ -37,80 +69,80 @@ fn parses_languages_aliases_tags_and_dispositions() {
         (
             "Clueless.1995.fre.forced.srt",
             "fr",
-            vec![TrackDisposition::Forced],
+            vec![SubtitleDisposition::Forced],
         ),
         (
             "Misery.1990.forced.fre.srt",
             "fr",
-            vec![TrackDisposition::Forced],
+            vec![SubtitleDisposition::Forced],
         ),
         (
             "Chappie.2015.en-forced.srt",
             "en",
-            vec![TrackDisposition::Forced],
+            vec![SubtitleDisposition::Forced],
         ),
         (
             "Frozen.2013.forced-en.srt",
             "en",
-            vec![TrackDisposition::Forced],
+            vec![SubtitleDisposition::Forced],
         ),
         (
             "Bambi.1942-forced-en.srt",
             "en",
-            vec![TrackDisposition::Forced],
+            vec![SubtitleDisposition::Forced],
         ),
-        ("Signs.2002.en-sdh.srt", "en", vec![TrackDisposition::Sdh]),
+        ("Signs.2002.en-sdh.srt", "en", vec![SubtitleDisposition::Sdh]),
         (
             "Deadpool.2016.en.1.forced.srt",
             "en",
-            vec![TrackDisposition::Forced],
+            vec![SubtitleDisposition::Forced],
         ),
         (
             "Candyman.2021.en (forced).srt",
             "en",
-            vec![TrackDisposition::Forced],
+            vec![SubtitleDisposition::Forced],
         ),
         (
             "Jumanji.1995.en[forced].srt",
             "en",
-            vec![TrackDisposition::Forced],
+            vec![SubtitleDisposition::Forced],
         ),
         (
             "Luca.2021.en(forced).srt",
             "en",
-            vec![TrackDisposition::Forced],
+            vec![SubtitleDisposition::Forced],
         ),
         (
             "Psycho.1960.[en][forced].srt",
             "en",
-            vec![TrackDisposition::Forced],
+            vec![SubtitleDisposition::Forced],
         ),
         (
             "Brazil.1985.[en.forced].srt",
             "en",
-            vec![TrackDisposition::Forced],
+            vec![SubtitleDisposition::Forced],
         ),
         (
             "Blackhat.2015.en.forced.sdh.forced.srt",
             "en",
-            vec![TrackDisposition::Forced, TrackDisposition::Sdh],
+            vec![SubtitleDisposition::Forced, SubtitleDisposition::Sdh],
         ),
-        ("forced.eng.srt", "en", vec![TrackDisposition::Forced]),
-        ("sdh.eng.srt", "en", vec![TrackDisposition::Sdh]),
+        ("forced.eng.srt", "en", vec![SubtitleDisposition::Forced]),
+        ("sdh.eng.srt", "en", vec![SubtitleDisposition::Sdh]),
         (
             "commentary.eng.srt",
             "en",
-            vec![TrackDisposition::Commentary],
+            vec![SubtitleDisposition::Commentary],
         ),
         ("Oldboy.2003.hi.srt", "hi", vec![]),
     ] {
-        let parsed = ParsedTrackSuffix::parse(Path::new(name)).unwrap();
+        let parsed = ParsedSubtitleSuffix::parse(Path::new(name)).unwrap();
         assert_eq!(
-            parsed.metadata.language.map(|language| language.iso_639_1),
+            parsed.languages.first().copied().and_then(language_code),
             Some(language),
             "{name}"
         );
-        assert_eq!(parsed.metadata.dispositions, dispositions, "{name}");
+        assert_eq!(parsed.dispositions, dispositions, "{name}");
     }
 }
 
@@ -124,53 +156,48 @@ fn unsupported_disposition_words_are_ignored_without_losing_language() {
         "The.Lego.Batman.Movie.2017.en.signs.srt",
         "Cry-Baby.1990.en.songs.srt",
     ] {
-        let parsed = ParsedTrackSuffix::parse(Path::new(name)).unwrap();
+        let parsed = ParsedSubtitleSuffix::parse(Path::new(name)).unwrap();
         assert_eq!(
-            parsed.metadata.language.map(|language| language.iso_639_1),
+            parsed.languages.first().copied().and_then(language_code),
             Some("en"),
             "{name}"
         );
-        assert!(parsed.metadata.dispositions.is_empty(), "{name}");
+        assert!(parsed.dispositions.is_empty(), "{name}");
     }
 }
 
 #[test]
 fn ignores_release_qualifiers_while_retaining_language_and_numbered_dispositions() {
-    for (name, association, track, dispositions) in [
-        ("Quiz.Lady.2023.en.UTF8.srt", "quizlady2023", None, vec![]),
+    for (name, association, dispositions) in [
+        ("Quiz.Lady.2023.en.UTF8.srt", "quizlady2023", vec![]),
         (
             "Scott.Pilgrim.vs.the.World.2010.en.orig.srt",
             "scottpilgrimvstheworld2010",
-            None,
             vec![],
         ),
         (
             "The.Princess.and.the.Frog.2009.en.full.srt",
             "theprincessandthefrog2009",
-            None,
             vec![],
         ),
         (
             "Doctor.Strange.2016.en.commentary2.srt",
             "doctorstrange2016",
-            Some(2),
-            vec![TrackDisposition::Commentary],
+            vec![SubtitleDisposition::Commentary],
         ),
         (
             "Strange.Days.1995.en.cc1.srt",
             "strangedays1995",
-            Some(1),
             vec![],
         ),
     ] {
-        let parsed = ParsedTrackSuffix::parse(Path::new(name)).unwrap();
+        let parsed = ParsedSubtitleSuffix::parse(Path::new(name)).unwrap();
         assert_eq!(
-            parsed.metadata.language.map(|language| language.iso_639_1),
+            parsed.languages.first().copied().and_then(language_code),
             Some("en"),
             "{name}"
         );
-        assert_eq!(parsed.metadata.number, track, "{name}");
-        assert_eq!(parsed.metadata.dispositions, dispositions, "{name}");
+        assert_eq!(parsed.dispositions, dispositions, "{name}");
         assert_eq!(
             parsed.identity_stem().map(normalize_identity_text),
             Some(association.to_owned()),
@@ -182,13 +209,13 @@ fn ignores_release_qualifiers_while_retaining_language_and_numbered_dispositions
 #[test]
 fn disposition_words_can_still_be_media_titles() {
     for (name, language) in [("Signs.srt", None), ("Signs.en.srt", Some("en"))] {
-        let parsed = ParsedTrackSuffix::parse(Path::new(name)).unwrap();
+        let parsed = ParsedSubtitleSuffix::parse(Path::new(name)).unwrap();
         assert_eq!(
-            parsed.metadata.language.map(|language| language.iso_639_1),
+            parsed.languages.first().copied().and_then(language_code),
             language,
             "{name}"
         );
-        assert_eq!(parsed.metadata.dispositions, [], "{name}");
+        assert_eq!(parsed.dispositions, [], "{name}");
         assert_eq!(parsed.identity_stem(), Some("Signs"), "{name}");
     }
 }
@@ -204,7 +231,7 @@ fn retains_identity_stems_after_peeling_suffixes() {
         ("Infinity_Pool_2023.subeng.srt", "infinitypool2023"),
         ("Labyrinth-1986.eng-sub.srt", "labyrinth1986"),
     ] {
-        let parsed = ParsedTrackSuffix::parse(Path::new(name)).unwrap();
+        let parsed = ParsedSubtitleSuffix::parse(Path::new(name)).unwrap();
         assert_eq!(
             parsed.identity_stem().map(normalize_identity_text),
             Some(association.to_owned()),
@@ -216,8 +243,7 @@ fn retains_identity_stems_after_peeling_suffixes() {
 #[test]
 fn generic_language_names_have_no_identity_stem() {
     for name in ["Eng.srt", "English.idx", "subeng.sub"] {
-        let parsed = ParsedTrackSuffix::parse(Path::new(name)).unwrap();
-        assert!(parsed.is_generic(), "{name}");
+        let parsed = ParsedSubtitleSuffix::parse(Path::new(name)).unwrap();
         assert_eq!(parsed.identity_stem(), None, "{name}");
     }
 }
@@ -228,29 +254,30 @@ fn ambiguous_bare_language_codes_remain_media_titles() {
         "Ar.srt", "Da.srt", "De.srt", "El.srt", "He.srt", "Is.srt", "It.srt", "La.srt", "No.srt",
         "123.srt",
     ] {
-        let parsed = ParsedTrackSuffix::parse(Path::new(name)).unwrap();
-        assert_eq!(parsed.metadata.language, None, "{name}");
-        assert!(!parsed.is_generic(), "{name}");
+        let parsed = ParsedSubtitleSuffix::parse(Path::new(name)).unwrap();
+        assert_eq!(parsed.languages.first().copied(), None, "{name}");
         assert!(parsed.identity_stem().is_some(), "{name}");
     }
 }
 
 #[test]
-fn retains_numeric_track_discriminators() {
+fn numeric_suffix_markers_are_removed_from_the_identity() {
     for (name, expected) in [
-        ("Paws.of.Fury.The.Legend.of.Hank.2022.en.1.srt", 1),
-        ("Perfect.Blue.1998.en.002.forced.srt", 2),
-        ("Analyze.That.2002.eng.[3].sub", 3),
+        (
+            "Paws.of.Fury.The.Legend.of.Hank.2022.en.1.srt",
+            "Paws.of.Fury.The.Legend.of.Hank.2022",
+        ),
+        ("Perfect.Blue.1998.en.002.forced.srt", "Perfect.Blue.1998"),
+        ("Analyze.That.2002.eng.[3].sub", "Analyze.That.2002"),
     ] {
-        let parsed = ParsedTrackSuffix::parse(Path::new(name)).unwrap();
-        assert_eq!(parsed.metadata.number, Some(expected), "{name}");
+        let parsed = ParsedSubtitleSuffix::parse(Path::new(name)).unwrap();
+        assert_eq!(parsed.identity_stem(), Some(expected), "{name}");
     }
     assert_eq!(
-        ParsedTrackSuffix::parse(Path::new("123.srt"))
+        ParsedSubtitleSuffix::parse(Path::new("123.srt"))
             .unwrap()
-            .metadata
-            .number,
-        None
+            .identity_stem(),
+        Some("123")
     );
 }
 
@@ -261,7 +288,7 @@ fn non_utf8_stems_never_produce_an_identity_stem() {
     use std::os::unix::ffi::OsStringExt;
 
     let path = PathBuf::from(OsString::from_vec(b"rango-\xff.en.srt".to_vec()));
-    let parsed = ParsedTrackSuffix::parse(&path).unwrap();
+    let parsed = ParsedSubtitleSuffix::parse(&path).unwrap();
 
     assert_eq!(parsed.identity_stem(), None);
 }

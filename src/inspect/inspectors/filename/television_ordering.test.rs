@@ -6,10 +6,10 @@ fn tag_values(filename: &str) -> (Vec<u16>, Vec<u16>) {
     let inspector = FilenameInspector::new(filename).inspect_television_ordering();
     let mut seasons = Vec::new();
     let mut episodes = Vec::new();
-    for tag in inspector.tags() {
-        match tag {
-            Tag::SeasonNumber(value) => seasons.push(*value),
-            Tag::EpisodeNumber(value) => episodes.push(*value),
+    for token in inspector.tokens() {
+        match token.tag.as_ref() {
+            Some(Tag::SeasonNumber(value)) => seasons.push(*value),
+            Some(Tag::EpisodeNumber(value)) => episodes.push(*value),
             _ => {}
         }
     }

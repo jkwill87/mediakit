@@ -5,10 +5,10 @@
 //!
 //! | Inspector | Opens a file? | Metadata source |
 //! | --- | --- | --- |
-//! | [`FilenameInspector`] | No | Filename tokens, extension, and external-track suffixes |
+//! | [`FilenameInspector`] | No | Filename tokens, extension, and standalone-subtitle suffixes |
 //! | [`FileInspector`] | Yes | Extension, filesystem properties, and supported container headers |
 //!
-//! For an ordered, lossless view of every embedded stream, use
+//! For an ordered, lossless view of every embedded track, use
 //! [`crate::probe::FileProber`] instead of [`FileInspector`].
 //!
 //! # Filename inspection
@@ -44,36 +44,49 @@
 //! [`FilenameInspector::media_type`]. Use [`FilenameInspector::with_media_type_hint`] when a name is
 //! ambiguous; [`crate::meta::fields::MediaType::Unknown`] restores automatic classification.
 //!
-//! ## Structured filename metadata
+//! ## Flat subtitle metadata and identity
 //!
-//! Tags are convenient for rendering and generic consumers. The
-//! [`FilenameInspector::metadata`] view additionally exposes the normalized
-//! [`crate::meta::fields::MediaFormat`] and any external audio or subtitle track encoded by a
-//! sidecar filename.
+//! Filename facts are exposed only as a flat, ordered tag list. Standalone subtitle filenames can
+//! add language and disposition tags. The suffix-free identity is the one exception because
+//! callers need it to associate a subtitle with its parent media.
 //!
 //! ```
 //! use mediakit::inspect::{FilenameInspector, Inspector};
-//! use mediakit::meta::fields::{
-//!     MediaFormat, TrackDisposition, TrackKind,
-//! };
+//! use mediakit::meta::Tag;
+//! use mediakit::meta::fields::{LanguageTag, SubtitleDisposition};
 //!
 //! let inspected =
 //!     FilenameInspector::new("Rango.2011.pt-BR.2.forced.srt").analyze();
-//! let metadata = inspected.metadata();
-//! let track = metadata.track.as_ref().expect("external track metadata");
 //!
-//! assert_eq!(metadata.format, Some(MediaFormat::Srt));
-//! assert_eq!(metadata.identity_stem(), Some("Rango.2011"));
-//! assert_eq!(track.kind, TrackKind::Subtitle);
-//! assert_eq!(track.language.map(|language| language.iso_639_1), Some("pt"));
-//! assert_eq!(track.number, Some(2));
-//! assert_eq!(track.dispositions, [TrackDisposition::Forced]);
+//! assert_eq!(inspected.identity_stem(), Some("Rango.2011"));
+//! assert!(inspected.tags().into_iter().any(|tag| matches!(
+//!     tag,
+//!     Tag::SubtitleLanguage(LanguageTag::Language(language))
+//!         if language.iso_639_1 == "pt"
+//! )));
+//! assert!(inspected.tags().into_iter().any(|tag| matches!(
+//!     tag,
+//!     Tag::SubtitleDisposition(SubtitleDisposition::Forced)
+//! )));
 //! ```
 //!
-//! [`FilenameMetadata::identity_stem`] removes recognized external-track suffixes so callers can
-//! associate sidecars with their parent media identity.
-//! [`FilenameMetadata::has_generic_identity`] distinguishes names such as `English.srt` that do not
-//! carry a useful media identity.
+//! [`FilenameInspector::identity_stem`] removes recognized subtitle suffixes.
+//!
+//! Language tags summarize each category. One normalized language uses
+//! [`LanguageTag::Language`](crate::meta::fields::LanguageTag::Language), while a contiguous block
+//! of multiple filename language markers or an explicit scene `MULTi` marker uses
+//! [`LanguageTag::Multi`](crate::meta::fields::LanguageTag::Multi) and format as `"multi"`.
+//!
+//! ```
+//! use mediakit::inspect::{FilenameInspector, Inspector};
+//! use mediakit::meta::Tag;
+//! use mediakit::meta::fields::LanguageTag;
+//!
+//! let inspected = FilenameInspector::new("Movie.ita.eng.1080p.mkv").analyze();
+//! assert!(inspected.tags().into_iter().any(
+//!     |tag| matches!(tag, Tag::AudioLanguage(LanguageTag::Multi))
+//! ));
+//! ```
 //!
 //! ## Positioned tokens
 //!
@@ -95,8 +108,9 @@
 //! # Filesystem and content inspection
 //!
 //! [`FileInspector`] emits tags for recognized extension, MIME type, and file size. By default it
-//! also probes supported container headers and converts the duration and preferred audio/video
-//! streams into tags.
+//! also probes supported container headers and converts the duration and primary audio/video tracks
+//! into technical tags. Audio language is summarized from all embedded audio tracks, including
+//! disabled tracks; embedded subtitle tracks are never converted to inspection tags.
 //!
 //! ```no_run
 //! use mediakit::inspect::{FileInspector, Inspector};
@@ -124,13 +138,11 @@
 //! [`Tag::key`](crate::meta::Tag::key) and [`Tag::value`](crate::meta::Tag::value) for generic
 //! display and key/value output. See the [`crate::meta`] module for the complete tag taxonomy.
 
-mod filename_metadata;
 mod inspector;
 mod inspectors;
 mod token;
 mod token_identity;
 
-pub use filename_metadata::FilenameMetadata;
 pub use inspector::Inspector;
 pub use inspectors::file::FileInspector;
 pub use inspectors::filename::FilenameInspector;

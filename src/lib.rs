@@ -3,18 +3,18 @@
 //! `mediakit` separates two common sources of media metadata:
 //!
 //! - [`inspect`] extracts descriptive tags from path names and file properties.
-//! - [`probe`] reads supported container headers into ordered, typed stream metadata.
+//! - [`probe`] reads supported container headers into ordered, typed track metadata.
 //!
-//! Both workflows use the types in [`meta`], making it possible to start with lightweight
-//! filename inspection and opt into file I/O only when content-derived metadata is needed.
+//! [`meta`] owns flat inspection tags and scalar vocabulary shared by those workflows; probe-owned
+//! aggregate records remain in [`probe`].
 //!
 //! # Choose a workflow
 //!
 //! | Goal | Entry point | Result |
 //! | --- | --- | --- |
-//! | Parse a movie, episode, or sidecar filename | [`inspect::FilenameInspector`] | [`meta::Tag`] values plus [`inspect::FilenameMetadata`] |
-//! | Inspect extension, size, MIME type, and primary streams | [`inspect::FileInspector`] | Best-effort [`meta::Tag`] values |
-//! | Enumerate container streams or handle probe failures | [`probe::FileProber`] | [`probe::MediaInfo`] or [`probe::ProbeError`] |
+//! | Parse a movie, episode, or subtitle filename | [`inspect::FilenameInspector`] | Flat [`meta::Tag`] values |
+//! | Inspect extension, size, MIME type, and primary tracks | [`inspect::FileInspector`] | Best-effort flat [`meta::Tag`] values |
+//! | Enumerate container tracks or handle probe failures | [`probe::FileProber`] | [`probe::ProbeResult`] or [`probe::ProbeError`] |
 //!
 //! # Inspect a filename
 //!
@@ -41,7 +41,7 @@
 //! ```
 //!
 //! See the [`inspect` module][inspect] for media-type hints, positioned filename
-//! [`inspect::Token`]s, structured external-track metadata, and filesystem inspection.
+//! [`inspect::Token`]s, subtitle identity accessors, and filesystem inspection.
 //!
 //! # Inspect a file
 //!
@@ -60,7 +60,7 @@
 //!
 //! # Probe container metadata
 //!
-//! Use [`probe::FileProber`] when stream order, every embedded track, or typed error handling
+//! Use [`probe::FileProber`] when global track order, every embedded track, or typed error handling
 //! matters. Probing detects the container from its bytes rather than trusting the filename
 //! extension.
 //!
@@ -69,33 +69,31 @@
 //!
 //! let media = FileProber::new("movie.mkv")?.probe()?;
 //! println!("container: {}", media.container);
-//! println!("video streams: {}", media.video_streams.len());
-//! println!("audio streams: {}", media.audio_streams.len());
-//! println!("subtitle streams: {}", media.subtitle_streams.len());
+//! println!("tracks: {}", media.tracks.len());
+//! println!("audio tracks: {}", media.audio_tracks().count());
+//! println!("subtitle tracks: {}", media.subtitle_tracks().count());
 //! # Ok::<(), mediakit::probe::ProbeError>(())
 //! ```
 //!
-//! The [`probe` module][probe] documents supported container families, primary-stream selection,
-//! and the [`probe::ProbeError`] variants. Its stream results use the shared types in
-//! [`meta::streams`].
+//! The [`probe` module][probe] documents supported container families, typed views,
+//! primary-track selection, and the [`probe::ProbeError`] variants.
 //!
 //! # Metadata model
 //!
 //! [`meta::Tag`] is the common, display-oriented output of inspection. Each variant retains a typed
 //! value from [`meta::fields`], such as [`meta::fields::MediaFormat`],
-//! [`meta::fields::Language`], or [`meta::fields::VideoCodec`]. Direct probing returns the more
-//! detailed [`probe::MediaInfo`] model with streams from [`meta::streams`] instead of flattening
-//! every stream into tags.
+//! [`meta::fields::LanguageTag`], or [`meta::fields::VideoCodec`]. Direct probing returns the more
+//! detailed [`probe::ProbeResult`] model instead of flattening every track into tags.
 //!
 //! An extension-derived [`meta::Tag::FileFormat`] and a content-derived
 //! [`meta::Tag::Container`] describe different facts and can legitimately disagree. For the same
-//! reason, [`probe::MediaInfo::container`] is authoritative for probed content.
+//! reason, [`probe::ProbeResult::container`] reports the format detected from probed content.
 //!
 //! # Feature flags
 //!
 //! | Feature | Default | Adds |
 //! | --- | --- | --- |
-//! | `with_serde` | Yes | Serde support for normalized formats, languages, countries, and external-track metadata |
+//! | `with_serde` | Yes | Serde support for normalized scalar metadata values |
 //! | `with_whatlang` | No | Natural-language detection through `Language::detect_from_text` |
 //!
 //! No feature flag is required for filename inspection, filesystem inspection, or container

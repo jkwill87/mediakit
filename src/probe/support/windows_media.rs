@@ -7,7 +7,7 @@
 use super::audio_layout;
 use super::binary::{fourcc, i32_le, invalid, u16_le, u32_le};
 use crate::meta::fields::AudioCodec;
-use crate::meta::streams::{AudioStream, StreamInfo};
+use crate::probe::{AudioTrack, TrackInfo};
 use std::io;
 
 /// Minimum encoded size of `WAVEFORMATEX` through `nBlockAlign`.
@@ -89,7 +89,7 @@ pub(in crate::probe) fn parse_bitmap_info(data: &[u8]) -> io::Result<BitmapInfo>
 }
 
 /// Converts a Windows wave-format structure into normalized audio metadata.
-pub(in crate::probe) fn parse_wave_audio(data: &[u8], info: StreamInfo) -> io::Result<AudioStream> {
+pub(in crate::probe) fn parse_wave_audio(data: &[u8], info: TrackInfo) -> io::Result<AudioTrack> {
     if data.len() < WAVE_FORMAT_MIN_BYTES {
         return Err(invalid("truncated WAVEFORMATEX"));
     }
@@ -101,7 +101,7 @@ pub(in crate::probe) fn parse_wave_audio(data: &[u8], info: StreamInfo) -> io::R
         channel_mask = Some(u32_le(data, WAVE_CHANNEL_MASK_OFFSET)?);
         format_tag = u16_le(data, WAVE_SUBFORMAT_TAG_OFFSET)?;
     }
-    Ok(AudioStream {
+    Ok(AudioTrack {
         info,
         codec: wave_audio_codec(format_tag),
         profile: None,

@@ -87,16 +87,6 @@ fn trim_alternative_qualifiers(filename: &str, (start, mut end): (usize, usize))
         end = trimmed_end;
     }
 
-    let value = &filename[start..end];
-    if value
-        .split(|character: char| !character.is_alphanumeric())
-        .next_back()
-        .is_some_and(|word| word.eq_ignore_ascii_case("multi"))
-        && let Some(word_start) = value.to_ascii_lowercase().rfind("multi")
-        && let Some((_, trimmed_end)) = trimmed_bounds(filename, start, start + word_start)
-    {
-        end = trimmed_end;
-    }
     (start, end)
 }
 

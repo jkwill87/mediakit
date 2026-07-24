@@ -1,7 +1,7 @@
 //! Defines private detected-container dispatch.
 
 use super::containers::{self, asf, avi, matroska, mp4, mpeg_ts};
-use super::{MediaInfo, ProbeError, ProbeInput};
+use super::{ProbeError, ProbeInput, ProbeResult};
 use crate::meta::fields::MediaFormat;
 use std::io;
 
@@ -45,7 +45,7 @@ impl DetectedContainer {
     }
 
     /// Runs the selected container implementation, forwarding retained state when present.
-    pub(super) fn probe(self, input: &mut ProbeInput) -> Result<MediaInfo, ProbeError> {
+    pub(super) fn probe(self, input: &mut ProbeInput) -> Result<ProbeResult, ProbeError> {
         let fallback = self.fallback_format();
         match self {
             Self::Asf => asf::probe(input).map_err(|error| ProbeError::from_probe(fallback, error)),

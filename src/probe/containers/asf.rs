@@ -11,9 +11,9 @@
 
 use super::binary::{invalid, read_region, u16_le, u32_le, u64_le};
 use super::windows_media::{BITMAP_INFO_COMPRESSION_BYTES, parse_bitmap_info, parse_wave_audio};
-use super::{MediaInfo, ProbeInput, pixel_dimension, video_codec, video_resolution};
+use super::{ProbeInput, ProbeResult, pixel_dimension, video_codec, video_resolution};
 use crate::meta::fields::MediaFormat;
-use crate::meta::streams::{AudioStream, StreamInfo, VideoStream};
+use crate::probe::{AudioTrack, Track, TrackInfo, VideoTrack};
 use std::io;
 use std::time::Duration;
 
@@ -73,7 +73,7 @@ pub(in crate::probe) fn matches(prefix: &[u8]) -> bool {
 }
 
 /// Probes a detected ASF container.
-pub(in crate::probe) fn probe(input: &mut ProbeInput) -> io::Result<MediaInfo> {
+pub(in crate::probe) fn probe(input: &mut ProbeInput) -> io::Result<ProbeResult> {
     let file_len = input.len();
     let file = input.file();
     // The fixed Header Object prefix is GUID (16), size (8), object count (4), plus two reserved
@@ -90,7 +90,7 @@ pub(in crate::probe) fn probe(input: &mut ProbeInput) -> io::Result<MediaInfo> {
     let object_count = usize::try_from(u32_le(&data, HEADER_OBJECT_COUNT_OFFSET)?)
         .map_err(|_| invalid("ASF object count is too large"))?;
     let mut offset = HEADER_OBJECT_PREFIX_BYTES;
-    let mut media = MediaInfo::new(MediaFormat::Wmv);
+    let mut media = ProbeResult::new(MediaFormat::Wmv);
     for _ in 0..object_count {
         // Every ASF child-object size includes its 16-byte GUID and 8-byte little-endian size
         // field.
@@ -121,7 +121,7 @@ pub(in crate::probe) fn probe(input: &mut ProbeInput) -> io::Result<MediaInfo> {
     Ok(media)
 }
 
-fn parse_file_properties(data: &[u8], media: &mut MediaInfo) -> io::Result<()> {
+fn parse_file_properties(data: &[u8], media: &mut ProbeResult) -> io::Result<()> {
     if data.len() < FILE_PROPERTIES_MIN_BYTES {
         return Err(invalid("truncated ASF file properties"));
     }
@@ -137,7 +137,7 @@ fn parse_file_properties(data: &[u8], media: &mut MediaInfo) -> io::Result<()> {
     Ok(())
 }
 
-fn parse_stream_properties(data: &[u8], media: &mut MediaInfo) -> io::Result<()> {
+fn parse_stream_properties(data: &[u8], media: &mut ProbeResult) -> io::Result<()> {
     // The 54-byte fixed prefix contains two stream-type GUIDs, time offset,
     // type/error-correction lengths, and stream flags. Type-Specific Data then
     // holds WAVEFORMATEX or ASF's video-format structure.
@@ -153,18 +153,18 @@ fn parse_stream_properties(data: &[u8], media: &mut MediaInfo) -> io::Result<()>
         .get(STREAM_PROPERTIES_PREFIX_BYTES..STREAM_PROPERTIES_PREFIX_BYTES + type_size)
         .ok_or_else(|| invalid("truncated ASF stream type data"))?;
     if stream_type == AUDIO_MEDIA_GUID {
-        media.audio_streams.push(parse_audio(type_data)?);
+        media.tracks.push(Track::Audio(parse_audio(type_data)?));
     } else if stream_type == VIDEO_MEDIA_GUID {
-        media.video_streams.push(parse_video(type_data)?);
+        media.tracks.push(Track::Video(parse_video(type_data)?));
     }
     Ok(())
 }
 
-fn parse_audio(data: &[u8]) -> io::Result<AudioStream> {
-    parse_wave_audio(data, StreamInfo::default())
+fn parse_audio(data: &[u8]) -> io::Result<AudioTrack> {
+    parse_wave_audio(data, TrackInfo::default())
 }
 
-fn parse_video(data: &[u8]) -> io::Result<VideoStream> {
+fn parse_video(data: &[u8]) -> io::Result<VideoTrack> {
     if data.len() < ASF_VIDEO_PREFIX_BYTES + BITMAP_INFO_COMPRESSION_BYTES {
         return Err(invalid("truncated ASF video format"));
     }
@@ -182,12 +182,12 @@ fn parse_video(data: &[u8]) -> io::Result<VideoStream> {
     let compression = bitmap
         .compression
         .expect("validated bitmap header includes compression");
-    Ok(VideoStream {
+    Ok(VideoTrack {
         codec: video_codec(&compression),
         width: pixel_dimension(bitmap.width),
         height: pixel_dimension(bitmap.height),
         resolution: video_resolution(bitmap.width, bitmap.height, None),
-        ..VideoStream::default()
+        ..VideoTrack::default()
     })
 }
 

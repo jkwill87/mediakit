@@ -1,43 +1,41 @@
-//! Parses external-track language, number, and disposition suffixes.
+//! Parses standalone-subtitle language and disposition suffixes.
 
-use crate::meta::fields::{Language, MediaFormat, TrackDisposition, TrackKind, TrackMetadata};
+use crate::meta::fields::{Language, LanguageTag, MediaFormat, SubtitleDisposition};
+use std::ops::Range;
 use std::path::Path;
 
 /// External-track filename semantics used by the filename inspection pipeline.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(super) struct ParsedTrackSuffix {
-    pub(super) format: MediaFormat,
-    pub(super) metadata: TrackMetadata,
-    base_stem: Option<String>,
-    generic: bool,
+pub(super) struct ParsedSubtitleSuffix<'a> {
+    pub(super) languages: Vec<LanguageTag>,
+    pub(super) dispositions: Vec<SubtitleDisposition>,
+    stem: Option<&'a str>,
+    identity_range: Option<Range<usize>>,
+    suffix_start: usize,
 }
 
 #[derive(Debug, Clone, Copy)]
 enum Marker {
     Language(Language),
-    Track(u16),
-    Disposition(TrackDisposition),
+    Multi,
+    Track,
+    Disposition(SubtitleDisposition),
     Neutral,
 }
 
-impl ParsedTrackSuffix {
-    pub(super) fn parse(path: &Path) -> Option<Self> {
-        let format = path
-            .extension()
+impl<'a> ParsedSubtitleSuffix<'a> {
+    pub(super) fn parse(path: &'a Path) -> Option<Self> {
+        path.extension()
             .and_then(|extension| extension.to_str())
             .and_then(MediaFormat::from_extension)
             .filter(|format| format.is_subtitle())?;
         let Some(stem) = path.file_stem().and_then(|stem| stem.to_str()) else {
             return Some(Self {
-                format,
-                metadata: TrackMetadata {
-                    kind: TrackKind::Subtitle,
-                    language: None,
-                    number: None,
-                    dispositions: Vec::new(),
-                },
-                base_stem: None,
-                generic: false,
+                languages: Vec::new(),
+                dispositions: Vec::new(),
+                stem: None,
+                identity_range: None,
+                suffix_start: 0,
             });
         };
 
@@ -46,20 +44,21 @@ impl ParsedTrackSuffix {
             boundary = stem.len();
             markers.clear();
         }
-        let language = markers.iter().find_map(|marker| match marker {
-            Marker::Language(language) => Some(*language),
-            Marker::Track(_) | Marker::Disposition(_) | Marker::Neutral => None,
-        });
-        let number = markers.iter().find_map(|marker| match marker {
-            Marker::Track(track) => Some(*track),
-            Marker::Language(_) | Marker::Disposition(_) | Marker::Neutral => None,
-        });
+        let languages = markers
+            .iter()
+            .rev()
+            .filter_map(|marker| match marker {
+                Marker::Language(language) => Some(LanguageTag::Language(*language)),
+                Marker::Multi => Some(LanguageTag::Multi),
+                Marker::Track | Marker::Disposition(_) | Marker::Neutral => None,
+            })
+            .collect();
         let dispositions = markers
             .iter()
             .rev()
             .filter_map(|marker| match marker {
                 Marker::Disposition(disposition) => Some(*disposition),
-                Marker::Language(_) | Marker::Track(_) | Marker::Neutral => None,
+                Marker::Language(_) | Marker::Multi | Marker::Track | Marker::Neutral => None,
             })
             .fold(Vec::new(), |mut unique, disposition| {
                 if !unique.contains(&disposition) {
@@ -68,34 +67,27 @@ impl ParsedTrackSuffix {
                 unique
             });
 
-        let base = stem[..boundary]
-            .trim_end_matches(is_suffix_separator)
-            .trim();
+        let base_prefix = stem[..boundary].trim_end_matches(is_suffix_separator);
+        let base = base_prefix.trim();
+        let base_start = base_prefix.len() - base_prefix.trim_start().len();
+        let base_end = base_start + base.len();
         let generic = base.is_empty() || is_generic_label(base);
-        let base_stem = (!base.is_empty()).then(|| base.to_owned());
+        let identity_range = (!generic).then_some(base_start..base_end);
         Some(Self {
-            format,
-            metadata: TrackMetadata {
-                kind: TrackKind::Subtitle,
-                language,
-                number,
-                dispositions,
-            },
-            base_stem,
-            generic,
+            languages,
+            dispositions,
+            stem: Some(stem),
+            identity_range,
+            suffix_start: if generic { 0 } else { base_end },
         })
     }
 
-    pub(super) fn identity_stem(&self) -> Option<&str> {
-        self.base_stem.as_deref()
+    pub(super) fn identity_stem(&self) -> Option<&'a str> {
+        self.stem?.get(self.identity_range.as_ref()?.clone())
     }
 
-    pub(super) const fn is_generic(&self) -> bool {
-        self.generic
-    }
-
-    pub(super) fn base_stem_len(&self) -> usize {
-        self.base_stem.as_ref().map_or(0, String::len)
+    pub(super) const fn suffix_start(&self) -> usize {
+        self.suffix_start
     }
 }
 
@@ -108,8 +100,8 @@ fn normalize_identity_text(value: &str) -> String {
 }
 
 fn marker_sequence(value: &str) -> Option<Vec<Marker>> {
-    if let Some((marker, track)) = numbered_qualifier(value) {
-        return Some(vec![marker, Marker::Track(track)]);
+    if let Some(marker) = numbered_qualifier(value) {
+        return Some(vec![marker, Marker::Track]);
     }
     let whole = classify_path_marker(value);
     if let Some(marker @ (Marker::Disposition(_) | Marker::Neutral)) = whole {
@@ -139,7 +131,7 @@ fn classify_path_marker(value: &str) -> Option<Marker> {
     classify_marker(trim_marker_wrappers(value)).or_else(|| {
         let value = trim_marker_wrappers(value);
         if is_track_index(value) {
-            value.parse().ok().map(Marker::Track)
+            Some(Marker::Track)
         } else {
             None
         }
@@ -195,8 +187,8 @@ fn peel_markers(stem: &str) -> (usize, Vec<Marker>) {
         }
         let segment = trim_marker_wrappers(raw_segment);
         let segment_offset = original_segment.find(segment).unwrap_or_default();
-        if let Some((marker, track)) = numbered_qualifier(segment) {
-            markers.push(Marker::Track(track));
+        if let Some(marker) = numbered_qualifier(segment) {
+            markers.push(Marker::Track);
             markers.push(marker);
             boundary = start;
             cursor = start;
@@ -259,9 +251,7 @@ fn peel_markers(stem: &str) -> (usize, Vec<Marker>) {
         if is_track_index(segment)
             && (start > 0 || !markers.is_empty() || previous_suffix_is_language(stem, start))
         {
-            markers.push(Marker::Track(
-                segment.parse().expect("validated numeric track index"),
-            ));
+            markers.push(Marker::Track);
             boundary = start;
             cursor = start;
             continue;
@@ -301,18 +291,12 @@ fn reconcile_marker(marker: Marker, markers: &[Marker], at_start: bool) -> Optio
             {
                 return None;
             }
-            let existing_language = markers.iter().find_map(|marker| match marker {
-                Marker::Language(language) => Some(*language),
-                Marker::Track(_) | Marker::Disposition(_) | Marker::Neutral => None,
-            });
-            match existing_language {
-                Some(_) => None,
-                None => Some(Marker::Language(language)),
-            }
+            Some(Marker::Language(language))
         }
         Marker::Disposition(_) if at_start => None,
+        Marker::Multi if at_start => None,
         Marker::Neutral if at_start => None,
-        Marker::Track(_) | Marker::Disposition(_) | Marker::Neutral => Some(marker),
+        Marker::Multi | Marker::Track | Marker::Disposition(_) | Marker::Neutral => Some(marker),
     }
 }
 
@@ -350,7 +334,7 @@ fn is_track_index(value: &str) -> bool {
         && value.chars().all(|character| character.is_ascii_digit())
 }
 
-fn numbered_qualifier(value: &str) -> Option<(Marker, u16)> {
+fn numbered_qualifier(value: &str) -> Option<Marker> {
     let value = trim_marker_wrappers(value);
     let digit_start = value.char_indices().find(|(index, _)| {
         value[*index..]
@@ -362,8 +346,7 @@ fn numbered_qualifier(value: &str) -> Option<(Marker, u16)> {
         return None;
     }
     let marker = classify_marker(qualifier)?;
-    matches!(marker, Marker::Disposition(_) | Marker::Neutral)
-        .then(|| track.parse().ok().map(|track| (marker, track)))?
+    matches!(marker, Marker::Disposition(_) | Marker::Neutral).then_some(marker)
 }
 
 fn previous_suffix_is_language(stem: &str, start: usize) -> bool {
@@ -380,7 +363,7 @@ fn previous_suffix_is_language(stem: &str, start: usize) -> bool {
         .unwrap_or(0);
     matches!(
         classify_suffix_marker(&stem[previous_start..previous_end]),
-        Some(Marker::Language(_))
+        Some(Marker::Language(_) | Marker::Multi)
     )
 }
 
@@ -409,13 +392,14 @@ fn trim_marker_wrappers(value: &str) -> &str {
 fn classify_marker(value: &str) -> Option<Marker> {
     let normalized = value.trim().to_ascii_lowercase().replace([' ', '_'], "-");
     let disposition = match normalized.as_str() {
-        "forced" => Some(TrackDisposition::Forced),
-        "sdh" => Some(TrackDisposition::Sdh),
-        "commentary" => Some(TrackDisposition::Commentary),
+        "forced" => Some(SubtitleDisposition::Forced),
+        "sdh" => Some(SubtitleDisposition::Sdh),
+        "commentary" => Some(SubtitleDisposition::Commentary),
         _ => None,
     };
     disposition
         .map(Marker::Disposition)
+        .or_else(|| (normalized == "multi").then_some(Marker::Multi))
         .or_else(|| {
             matches!(
                 normalized.as_str(),
@@ -475,4 +459,4 @@ fn is_generic_label(value: &str) -> bool {
     )
 }
 
-crate::unit_tests!("track_suffix_parser.test.rs");
+crate::unit_tests!("subtitle_suffix_parser.test.rs");

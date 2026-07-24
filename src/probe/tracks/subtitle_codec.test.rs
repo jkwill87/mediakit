@@ -1,11 +1,11 @@
-//! Verifies subtitle-codec metadata behavior.
+//! Verifies embedded-subtitle codec parsing and formatting.
 
 use super::*;
 use std::str::FromStr;
 
 #[test]
 fn canonical_values_round_trip() {
-    let cases = [
+    for (codec, canonical) in [
         (SubtitleCodec::Arib, "arib"),
         (SubtitleCodec::Ass, "ass"),
         (SubtitleCodec::Bitmap, "bitmap"),
@@ -24,9 +24,7 @@ fn canonical_values_round_trip() {
         (SubtitleCodec::Ttml, "ttml"),
         (SubtitleCodec::VobSub, "vobsub"),
         (SubtitleCodec::WebVtt, "webvtt"),
-    ];
-
-    for (codec, canonical) in cases {
+    ] {
         assert_eq!(codec.to_string(), canonical);
         assert_eq!(SubtitleCodec::from_str(canonical).unwrap(), codec);
     }

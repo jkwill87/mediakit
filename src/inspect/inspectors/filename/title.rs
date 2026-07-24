@@ -10,17 +10,24 @@ impl FilenameInspector {
     /// **Preconditions:**
     /// - Requires structural and technical metadata to have been previously selected.
     pub(super) fn inspect_title(self) -> Self {
+        let identity_end = self.subtitle_identity_end().unwrap_or(self.filename.len());
         let mut tokens = self.tokens;
-        let Some(range_start_idx) = tokens
-            .iter()
-            .position(|token| token.tag.is_none() && matches!(token.ident, TokenIdentity::Word))
-        else {
+        let Some(range_start_idx) = tokens.iter().position(|token| {
+            token.start < identity_end
+                && token.tag.is_none()
+                && matches!(token.ident, TokenIdentity::Word)
+        }) else {
             return Self { tokens, ..self };
         };
-        let mut range_end_idx = tokens[range_start_idx..]
+        let tagged_end = tokens[range_start_idx..]
             .iter()
             .position(|token| token.tag.is_some())
             .map_or(tokens.len(), |offset| range_start_idx + offset);
+        let identity_end_idx = tokens[range_start_idx..]
+            .iter()
+            .position(|token| token.start >= identity_end)
+            .map_or(tokens.len(), |offset| range_start_idx + offset);
+        let mut range_end_idx = tagged_end.min(identity_end_idx);
         while range_end_idx > range_start_idx
             && matches!(tokens[range_end_idx - 1].ident, TokenIdentity::Delimiter)
         {

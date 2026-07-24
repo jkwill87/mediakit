@@ -1,10 +1,10 @@
 //! Bounded, content-derived metadata from supported media containers.
 //!
 //! Probing opens a file, identifies its container from structural signatures, and reads only the
-//! headers, stream descriptions, and timing tables needed to build [`MediaInfo`]. Media payloads
+//! headers, track descriptions, and timing tables needed to build [`ProbeResult`]. Media payloads
 //! are never decoded.
 //!
-//! Use this module when every embedded stream, container order, or typed failures matter. For a
+//! Use this module when every embedded track, container order, or typed failures matter. For a
 //! best-effort sequence of display-oriented [`Tag`](crate::meta::Tag) values, see
 //! [`crate::inspect::FileInspector`].
 //!
@@ -22,14 +22,14 @@
 //! if let Some(duration) = media.duration {
 //!     println!("duration: {:.3}s", duration.as_secs_f64());
 //! }
-//! for (index, stream) in media.audio_streams.iter().enumerate() {
-//!     println!("audio[{index}]: {stream:#?}");
+//! for (index, track) in media.tracks.iter().enumerate() {
+//!     println!("track[{index}]: {track:#?}");
 //! }
 //! # Ok::<(), mediakit::probe::ProbeError>(())
 //! ```
 //!
 //! Container detection is based on file content, not the filename extension. The normalized result
-//! is stored in [`MediaInfo::container`].
+//! is stored in [`ProbeResult::container`].
 //!
 //! # Supported containers
 //!
@@ -49,23 +49,23 @@
 //!
 //! # Result model
 //!
-//! [`MediaInfo`] preserves stream order separately for [`MediaInfo::video_streams`],
-//! [`MediaInfo::audio_streams`], and [`MediaInfo::subtitle_streams`].
+//! [`ProbeResult::tracks`] preserves the native order across all supported track kinds.
 //!
 //! | Type | Container-specific metadata |
 //! | --- | --- |
-//! | [`VideoStream`](crate::meta::streams::VideoStream) | Codec and profile, dimensions, normalized resolution, frame rate, and dynamic range |
-//! | [`AudioStream`](crate::meta::streams::AudioStream) | Codec and profile, channel layout, and bit rate |
-//! | [`SubtitleStream`](crate::meta::streams::SubtitleStream) | Normalized subtitle codec |
+//! | [`VideoTrack`] | Codec and profile, dimensions, normalized resolution, frame rate, and dynamic range |
+//! | [`AudioTrack`] | Codec and profile, channel layout, and bit rate |
+//! | [`SubtitleTrack`] | Normalized subtitle codec |
 //!
-//! Every stream embeds [`StreamInfo`](crate::meta::streams::StreamInfo) for enabled/default flags and normalized
+//! Every variant embeds [`TrackInfo`] for enabled/default flags and normalized
 //! [`Language`](crate::meta::fields::Language). Fields are optional when a container omits them or
 //! the bounded parser does not establish them.
 //!
-//! The convenience methods [`MediaInfo::primary_video_stream`],
-//! [`MediaInfo::primary_audio_stream`], and [`MediaInfo::primary_subtitle_stream`] choose an enabled
-//! default stream first, then any enabled stream, then the first stream in container order. The
-//! ordered vectors remain available when an application needs a different policy.
+//! The typed views [`ProbeResult::video_tracks`], [`ProbeResult::audio_tracks`], and
+//! [`ProbeResult::subtitle_tracks`] are allocation-free and retain relative container order. The
+//! corresponding `primary_*_track` methods choose an enabled default track first, then any enabled
+//! track, then the first track of that kind. Primary status is computed from current [`TrackInfo`]
+//! values rather than stored separately.
 //!
 //! # Error handling
 //!
@@ -92,23 +92,26 @@
 //! # Relationship to inspection
 //!
 //! [`crate::inspect::FileInspector`] uses this API internally but intentionally changes the
-//! contract: probing failures are ignored, only preferred audio/video streams are converted to
-//! tags, and extension-derived baseline metadata is retained. Call [`FileProber`] directly when
+//! contract: probing failures are ignored, only primary audio/video tracks are converted to
+//! technical tags, embedded subtitles are omitted, and extension-derived baseline metadata is
+//! retained. Call [`FileProber`] directly when
 //! those tradeoffs are not appropriate.
 //!
 //! Format implementations live under the private `containers` namespace, while reusable byte
 //! readers and cross-container normalization live under private `support`. The public API remains
-//! container-independent through [`MediaInfo`] and [`crate::meta::streams`].
+//! container-independent through [`ProbeResult`] and [`Track`].
 
 mod containers;
 mod detected_container;
 mod error;
 mod input;
-mod media_info;
+mod probe_result;
 mod support;
+mod tracks;
 
 pub use error::ProbeError;
-pub use media_info::MediaInfo;
+pub use probe_result::ProbeResult;
+pub use tracks::{AudioTrack, SubtitleCodec, SubtitleTrack, Track, TrackInfo, VideoTrack};
 
 use detected_container::DetectedContainer;
 use input::ProbeInput;
@@ -135,7 +138,7 @@ impl FileProber {
     }
 
     /// Parses the detected container and returns its structured metadata.
-    pub fn probe(self) -> Result<MediaInfo, ProbeError> {
+    pub fn probe(self) -> Result<ProbeResult, ProbeError> {
         let Self {
             mut input,
             detected,

@@ -77,7 +77,7 @@ fn retains_dts_hd_codec_and_profile() {
 }
 
 #[test]
-fn maps_embedded_subtitle_streams() {
+fn maps_embedded_subtitle_tracks() {
     assert_eq!(
         subtitle_stream_type(0x90, &[]),
         Some(SubtitleCodec::Pgs)

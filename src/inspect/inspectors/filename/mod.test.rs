@@ -1,4 +1,4 @@
-//! Verifies ordered filename inspection and structured metadata.
+//! Verifies ordered filename inspection and flat metadata.
 
 use super::*;
 use crate::inspect::Inspector;

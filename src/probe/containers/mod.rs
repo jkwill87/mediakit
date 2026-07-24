@@ -13,7 +13,7 @@ use super::support::{
     audio_codec, audio_layout, avc_profile, binary, hevc_profile, pixel_dimension, subtitle_codec,
     video_codec, video_resolution, windows_media,
 };
-use super::{MediaInfo, ProbeInput};
+use super::{ProbeInput, ProbeResult};
 
 /// Maximum leading bytes required by any built-in container detector.
 pub(super) const DETECTION_BYTES: usize = mpeg_ts::DETECTION_BYTES;

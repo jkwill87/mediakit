@@ -61,16 +61,13 @@ pub enum Tag {
     AudioProfile(fields::AudioProfile),
 
     /// The audio language of the media file.
-    AudioLanguage(fields::Language),
+    AudioLanguage(fields::LanguageTag),
 
     /// The language of a subtitle file.
-    SubtitleLanguage(fields::Language),
-
-    /// A numeric subtitle track discriminator.
-    SubtitleTrack(u16),
+    SubtitleLanguage(fields::LanguageTag),
 
     /// A subtitle track disposition encoded in the filename.
-    SubtitleDisposition(fields::TrackDisposition),
+    SubtitleDisposition(fields::SubtitleDisposition),
 
     /// The video dynamic range of the media file.
     VideoDynamicRange(fields::VideoDynamicRange),
@@ -131,7 +128,6 @@ impl Tag {
         AudioProfile => "audio_profile",
         AudioLanguage => "audio_language",
         SubtitleLanguage => "subtitle_language",
-        SubtitleTrack => "subtitle_track",
         SubtitleDisposition => "subtitle_disposition",
         VideoDynamicRange => "video_dynamic_range",
         VideoCodec => "video_codec",

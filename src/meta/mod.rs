@@ -1,10 +1,8 @@
-//! Shared metadata vocabulary for inspection and probing.
+//! Flat inspection tags and shared scalar metadata vocabulary.
 //!
-//! This module has three layers:
-//!
-//! - [`Tag`] identifies what a value means in a generic inspection result.
-//! - [`fields`] contains the normalized domain types carried by tags and probe streams.
-//! - [`streams`] contains typed audio, video, and embedded-subtitle stream metadata.
+//! [`Tag`] identifies what a value means in a generic inspection result, while [`fields`] contains
+//! normalized domain values that are useful to both inspection and probing. Ordered aggregate track
+//! records intentionally live in [`crate::probe`].
 //!
 //! The separation lets generic consumers render a sequence of tags with [`Tag::key`] and
 //! [`Tag::value`], while typed consumers can match a variant and continue working with values such
@@ -50,7 +48,7 @@
 //! | Identity and release | [`Tag::Title`], [`Tag::AlternativeTitle`], [`Tag::ReleaseGroup`], [`Tag::ReleaseSource`], [`Tag::PremiereYear`] |
 //! | Episode and timing | [`Tag::AirDate`], [`Tag::SeasonNumber`], [`Tag::EpisodeNumber`], [`Tag::EpisodeTitle`], [`Tag::Runtime`] |
 //! | Audio | [`Tag::AudioCodec`], [`Tag::AudioProfile`], [`Tag::AudioLayout`], [`Tag::AudioBitRate`], [`Tag::AudioLanguage`] |
-//! | Subtitle | [`Tag::SubtitleLanguage`], [`Tag::SubtitleTrack`], [`Tag::SubtitleDisposition`] |
+//! | Subtitle | [`Tag::SubtitleLanguage`], [`Tag::SubtitleDisposition`] |
 //! | Video | [`Tag::VideoCodec`], [`Tag::VideoProfile`], [`Tag::VideoResolution`], [`Tag::VideoFrameRate`], [`Tag::VideoDynamicRange`] |
 //! | Disc | [`Tag::DiscNumber`] |
 //!
@@ -61,17 +59,16 @@
 //! incorrectly named file may contain a different container, and filename-only inspection cannot
 //! establish the content format.
 //!
-//! Direct [`crate::probe`] results use [`crate::probe::MediaInfo::container`] and the structures in
-//! [`streams`] instead of flattening every stream into tags.
+//! Direct [`crate::probe`] results use [`crate::probe::ProbeResult::container`] and ordered
+//! [`crate::probe::Track`] values instead of flattening every track into tags.
 //!
 //! # Normalized fields
 //!
 //! The [`fields`] page groups format, language, country, codec, profile, resolution, date, and
-//! external-track types. Most implement [`std::fmt::Display`], and enum-like fields can be parsed
+//! subtitle-filename types. Most implement [`std::fmt::Display`], and enum-like fields can be parsed
 //! through [`std::str::FromStr`] where their item documentation advertises that implementation.
 //! Prefer these typed values over comparing the output of [`Tag::value`] in application logic.
 
 pub mod fields;
-pub mod streams;
 mod tag;
 pub use tag::Tag;

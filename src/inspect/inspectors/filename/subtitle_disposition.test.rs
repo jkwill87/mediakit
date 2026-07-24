@@ -1,4 +1,4 @@
-//! Verifies filename inspection of external-track suffix metadata.
+//! Verifies filename inspection of standalone-subtitle dispositions.
 
 use super::*;
 use crate::inspect::Inspector;
@@ -13,10 +13,9 @@ fn values(filename: &str, key: &str) -> Vec<String> {
         .collect()
 }
 #[test]
-fn tags_language_track_and_dispositions_without_creating_an_alternative_title() {
+fn tags_dispositions_without_exposing_track_numbers_or_creating_an_alternative_title() {
     let inspector = FilenameInspector::new("28.Weeks.Later.2007.en.2.forced.sdh.srt").analyze();
     assert_eq!(values(&inspector.filename, "subtitle_language"), ["en"]);
-    assert_eq!(values(&inspector.filename, "subtitle_track"), ["2"]);
     assert_eq!(
         values(&inspector.filename, "subtitle_disposition"),
         ["forced", "sdh"]
@@ -48,4 +47,31 @@ fn supports_compound_and_wrapped_subtitle_suffixes() {
             "{filename}"
         );
     }
+}
+
+#[test]
+fn aggregates_distinct_and_repeated_subtitle_languages() {
+    assert_eq!(values("Movie.eng.ita.srt", "subtitle_language"), ["multi"]);
+    assert_eq!(values("Movie.eng.eng.srt", "subtitle_language"), ["multi"]);
+}
+
+#[test]
+fn numeric_suffixes_are_excluded_from_identity_and_title_metadata() {
+    let movie = FilenameInspector::new("Movie.en.2.srt").analyze();
+    assert_eq!(movie.identity_stem(), Some("Movie"));
+    assert!(movie
+        .tags()
+        .into_iter()
+        .any(|tag| matches!(tag, Tag::Title(title) if title == "Movie")));
+    assert!(
+        movie
+            .tags()
+            .into_iter()
+            .all(|tag| tag.key() != "subtitle_track_number")
+    );
+
+    let episode = FilenameInspector::new("Show.S01E01.Pilot.en.2.srt").analyze();
+    assert!(episode.tags().into_iter().any(
+        |tag| matches!(tag, Tag::EpisodeTitle(title) if title == "Pilot")
+    ));
 }

@@ -5,15 +5,15 @@ use crate::meta::Tag;
 use crate::meta::fields::MediaFormat;
 
 impl FileInspector {
-    pub(super) fn inspect_file_format(mut self) -> Self {
-        if let Some(format) = self
+    pub(super) fn inspect_file_format(self) -> Self {
+        let tag = self
             .path
             .extension()
             .and_then(|extension| extension.to_str())
             .and_then(MediaFormat::from_extension)
-        {
-            self.tags.push(Tag::FileFormat(format));
-        }
-        self
+            .map(Tag::FileFormat);
+        let mut tags = self.tags;
+        tags.extend(tag);
+        Self { tags, ..self }
     }
 }

@@ -42,9 +42,9 @@ impl FileInspector {
 impl Inspector for FileInspector {
     fn analyze(self) -> Self {
         self.inspect_file_format()
-            .inspect_mime_type()
             .inspect_file_size()
             .inspect_container()
+            .inspect_mime_type()
     }
 
     fn tags(&self) -> Vec<&Tag> {

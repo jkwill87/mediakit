@@ -336,6 +336,7 @@ dependencies = [
  "criterion",
  "regex-automata",
  "serde",
+ "serde_json",
  "thiserror",
  "whatlang",
 ]

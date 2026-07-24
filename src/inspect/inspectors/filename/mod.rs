@@ -2,28 +2,28 @@
 
 mod alternative_title;
 mod audio_codec;
-mod audio_language;
 mod audio_layout;
 mod audio_profile;
 mod episode_title;
 mod file_format;
+mod language;
 mod media_type;
 mod premiere_year;
 mod release_group;
 mod release_source;
+mod subtitle_disposition;
+mod subtitle_suffix_parser;
 mod television_airdate;
 mod television_ordering;
 mod title;
-mod track_suffix;
-mod track_suffix_parser;
 mod video_codec;
 mod video_dynamic_range;
 mod video_profile;
 mod video_resolution;
 
-use crate::inspect::{FilenameMetadata, Inspector, Token, TokenIdentity};
+use crate::inspect::{Inspector, Token, TokenIdentity};
 use crate::meta::Tag;
-use crate::meta::fields::MediaType;
+use crate::meta::fields::{MediaFormat, MediaType};
 use std::path::PathBuf;
 
 const CASE_INSENSITIVE: &str = r"(?i)";
@@ -48,17 +48,18 @@ const EOL: &str = r"(?:$|[._ -])";
 /// - [`Tag::AudioLayout`]
 /// - [`Tag::AudioLanguage`]
 /// - [`Tag::SubtitleLanguage`]
-/// - [`Tag::SubtitleTrack`]
 /// - [`Tag::SubtitleDisposition`]
 /// - [`Tag::VideoCodec`]
 /// - [`Tag::VideoProfile`]
 /// - [`Tag::VideoDynamicRange`]
 /// - [`Tag::VideoResolution`]
+///
+/// Filename components that cannot be represented as UTF-8 are retained in the path but are not
+/// tokenized or inspected for tags.
 pub struct FilenameInspector {
     path: PathBuf,
     filename: String,
     tokens: Vec<Token>,
-    metadata: FilenameMetadata,
     media_type_hint: Option<MediaType>,
 }
 
@@ -110,7 +111,6 @@ impl FilenameInspector {
             path,
             filename,
             tokens,
-            metadata: FilenameMetadata::default(),
             media_type_hint: None,
         }
     }
@@ -125,9 +125,12 @@ impl FilenameInspector {
         &self.tokens
     }
 
-    /// Returns structured file-format and external-track metadata.
-    pub const fn metadata(&self) -> &FilenameMetadata {
-        &self.metadata
+    /// Returns the suffix-free identity stem, when it can be represented as UTF-8.
+    pub fn identity_stem(&self) -> Option<&str> {
+        subtitle_suffix_parser::ParsedSubtitleSuffix::parse(&self.path).map_or_else(
+            || self.path.file_stem().and_then(|stem| stem.to_str()),
+            |parsed| parsed.identity_stem(),
+        )
     }
 
     /// Supplies an explicit media type hint for ambiguous filenames.
@@ -145,8 +148,7 @@ impl Inspector for FilenameInspector {
     fn analyze(self) -> Self {
         self //
             .inspect_file_format()
-            .inspect_track_suffix()
-            .inspect_audio_language()
+            .inspect_subtitle_disposition()
             .inspect_leading_release_group()
             .inspect_television_ordering()
             .inspect_television_air_date()
@@ -158,11 +160,10 @@ impl Inspector for FilenameInspector {
             .inspect_video_profile()
             .inspect_video_dynamic_range()
             .inpsect_video_resolution()
-            .inspect_audio_language()
+            .inspect_language()
             .inspect_title()
             .inspect_premiere_year()
             .inspect_alternative_title()
-            .inspect_audio_language()
             .inspect_episode_title()
             .inspect_release_group()
     }
@@ -172,6 +173,22 @@ impl Inspector for FilenameInspector {
             .iter()
             .filter_map(|token| token.tag.as_ref())
             .collect()
+    }
+}
+
+impl FilenameInspector {
+    /// Returns the media format inferred directly from the path extension.
+    pub(super) fn file_format(&self) -> Option<MediaFormat> {
+        self.path
+            .extension()
+            .and_then(|extension| extension.to_str())
+            .and_then(MediaFormat::from_extension)
+    }
+
+    /// Returns the end of the subtitle identity before suffix markers.
+    pub(super) fn subtitle_identity_end(&self) -> Option<usize> {
+        subtitle_suffix_parser::ParsedSubtitleSuffix::parse(&self.path)
+            .map(|parsed| parsed.suffix_start())
     }
 }
 

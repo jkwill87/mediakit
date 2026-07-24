@@ -1,14 +1,14 @@
-//! Defines technical metadata for video streams.
+//! Defines technical metadata for video tracks.
 
-use super::stream_info::StreamInfo;
+use super::TrackInfo;
 use crate::meta::fields::{VideoCodec, VideoDynamicRange, VideoProfile, VideoResolution};
 
-/// Technical metadata for one video stream.
+/// Technical metadata for one video track.
 #[derive(Debug, Clone, PartialEq, Default)]
 #[non_exhaustive]
-pub struct VideoStream {
-    /// Container-independent stream metadata.
-    pub info: StreamInfo,
+pub struct VideoTrack {
+    /// Container-independent track metadata.
+    pub info: TrackInfo,
     /// The detected video codec.
     pub codec: Option<VideoCodec>,
     /// The detected codec profile.

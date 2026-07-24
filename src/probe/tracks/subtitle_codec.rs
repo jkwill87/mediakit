@@ -1,7 +1,7 @@
-//! Defines normalized subtitle codec values.
+//! Defines normalized embedded-subtitle codec values.
 
 crate::macros::convertable_enum! {
-    /// Subtitle codecs supported by the library.
+    /// Embedded-subtitle codecs supported by probing.
     SubtitleCodec,
     /// ARIB STD-B24 subtitles.
     Arib => "arib",
